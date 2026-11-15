@@ -42,6 +42,17 @@ class ResearchResult(BaseModel):
     )
 
 
+class CitationItem(BaseModel):
+    """Structured citation reference linking answer claims to verified sources."""
+
+    document_id: Optional[str] = Field(default=None, description="Document identifier")
+    chunk_id: Optional[str] = Field(default=None, description="Chunk identifier")
+    filename: Optional[str] = Field(default=None, description="Source document filename")
+    page_number: Optional[int] = Field(default=1, description="Page number citation")
+    snippet: Optional[str] = Field(default=None, description="Quoted or excerpted passage")
+    similarity_score: Optional[float] = Field(default=None, description="Retrieval similarity score")
+
+
 class WorkflowResponse(BaseModel):
     """Structured final answer produced by the Response Agent."""
 
@@ -65,7 +76,7 @@ class WorkflowResponse(BaseModel):
         le=1.0,
         description="Calibrated confidence score between 0.0 and 1.0 reflecting completeness.",
     )
-    sources: List[Dict[str, Any]] = Field(
+    sources: List[CitationItem] = Field(
         default_factory=list,
         description="Referenced sources and document citations grounded in retrieval.",
     )

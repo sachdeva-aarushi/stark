@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # LLM Settings
     LLM_PROVIDER: str = Field(
         default="mock",
-        description="LLM Provider: openai, azure, ollama, mock",
+        description="LLM Provider: openai, groq, azure, ollama, mock",
     )
     LLM_MODEL: str = Field(default="gpt-4o-mini", description="Model identifier")
     LLM_API_KEY: Optional[str] = Field(default=None, description="API key for the LLM provider")
@@ -70,6 +70,12 @@ class Settings(BaseSettings):
     WORKFLOW_TIMEOUT_SECONDS: float = Field(default=120.0, ge=10.0, le=600.0, description="Total workflow execution timeout in seconds")
     DB_POOL_TIMEOUT: float = Field(default=30.0, ge=1.0, le=120.0, description="Database connection pool checkout timeout in seconds")
     CHECKPOINTER_POOL_TIMEOUT: float = Field(default=10.0, ge=1.0, le=60.0, description="Checkpointer pool checkout timeout in seconds")
+
+    # Supabase Integration Settings
+    PUBLIC_URL: Optional[str] = Field(default=None, description="Supabase API URL")
+    PUBLISHABLE_KEY: Optional[str] = Field(default=None, description="Supabase Publishable/Anon API Key")
+    SECRET_KEY: Optional[str] = Field(default=None, description="Supabase Service Role/Secret API Key")
+    CONNECTION_STRING: Optional[str] = Field(default=None, description="Direct PostgreSQL connection string")
 
     model_config = SettingsConfigDict(
         env_file=".env",

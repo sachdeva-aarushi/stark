@@ -3,18 +3,25 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+COPY package*.json ./
+RUN npm ci || npm install
 
 COPY . .
 RUN npm run build
 
 # Production serve stage
-FROM nginx:alpine
+FROM node:20-alpine AS runner
 
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-EXPOSE 80
+ENV NODE_ENV=production
+ENV PORT=3000
 
-CMD ["nginx", "-g", "daemon off;"]
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]

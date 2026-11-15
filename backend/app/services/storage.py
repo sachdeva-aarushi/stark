@@ -23,9 +23,11 @@ class SupabaseStorageService:
     @classmethod
     def _get_credentials(cls) -> tuple[str, str]:
         settings = get_settings()
-        url = os.getenv("PUBLIC_URL") or "https://eliextckdrxvhesflorz.supabase.co"
+        url = settings.PUBLIC_URL or os.getenv("PUBLIC_URL") or "https://eliextckdrxvhesflorz.supabase.co"
         secret_key = (
-            os.getenv("SECRET_KEY")
+            settings.SECRET_KEY
+            or os.getenv("SECRET_KEY")
+            or settings.PUBLISHABLE_KEY
             or os.getenv("PUBLISHABLE_KEY")
             or ""
         )

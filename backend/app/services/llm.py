@@ -270,9 +270,9 @@ def get_llm(
         logger.info("Using deterministic MockChatModel (provider: mock)")
         return MockChatModel()
 
-    if provider in ("openai", "ollama", "azure_openai"):
+    if provider in ("openai", "groq", "ollama", "azure_openai"):
         api_key = cfg.LLM_API_KEY or "dummy-key"
-        base_url = cfg.LLM_BASE_URL if cfg.LLM_BASE_URL else None
+        base_url = cfg.LLM_BASE_URL if cfg.LLM_BASE_URL else ("https://api.groq.com/openai/v1" if provider == "groq" else None)
 
         logger.info(
             f"Configuring ChatOpenAI with model={cfg.LLM_MODEL}, provider={provider}, base_url={base_url or 'default'}"

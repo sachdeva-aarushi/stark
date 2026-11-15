@@ -1,0 +1,65 @@
+services:
+  # STARK Backend FastAPI Service
+  - type: web
+    name: stark-backend
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: python -m alembic -c backend/alembic.ini upgrade head && uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health/ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: APP_NAME
+        value: "STARK Workflow Platform"
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LLM_PROVIDER
+        value: openai
+      - key: LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: EMBEDDING_PROVIDER
+        value: local
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-MiniLM-L6-v2
+      - key: EMBEDDING_DIMENSION
+        value: "384"
+      - key: VALIDATION_ENABLED
+        value: "true"
+      - key: APPROVAL_ENABLED
+        value: "true"
+      - key: PUBLIC_URL
+        value: https://eliextckdrxvhesflorz.supabase.co
+      - key: PUBLISHABLE_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "http://localhost:3000"
+
+  # STARK Frontend Next.js Service
+  - type: web
+    name: stark-frontend
+    runtime: node
+    region: oregon
+    plan: starter
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start -- -p $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: stark-backend
+          property: url
