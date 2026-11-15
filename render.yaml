@@ -28,11 +28,13 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: EMBEDDING_PROVIDER
-        value: local
+        value: google
       - key: EMBEDDING_MODEL
-        value: sentence-transformers/all-MiniLM-L6-v2
+        value: gemini-embedding-001
       - key: EMBEDDING_DIMENSION
-        value: "384"
+        value: "768"
+      - key: GEMINI_API_KEY
+        sync: false
       - key: VALIDATION_ENABLED
         value: "true"
       - key: APPROVAL_ENABLED

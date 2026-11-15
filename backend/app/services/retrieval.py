@@ -61,6 +61,7 @@ class RetrievalService:
             .where(
                 Document.status == "COMPLETED",
                 DocumentChunk.embedding.isnot(None),
+                DocumentChunk.embedding_dimension == embedding_provider.dimension,
             )
         )
 

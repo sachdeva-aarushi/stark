@@ -29,6 +29,7 @@ class DocumentSummary(BaseModel):
     file_size: int = Field(..., description="File size in bytes")
     file_size_bytes: Optional[int] = Field(default=None, description="Alias for file_size")
     status: str = Field(..., description="Ingestion lifecycle status")
+    error_message: Optional[str] = Field(default=None, description="Error details if ingestion failed")
     page_count: int = Field(default=1, description="Number of pages")
     chunk_count: int = Field(default=0, description="Number of chunks")
     checksum: str = Field(..., description="SHA-256 digest")

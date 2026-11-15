@@ -175,7 +175,7 @@ class DocumentService:
                 embedding_provider = get_embedding_provider()
                 chunk_texts = [c.content for c in raw_chunks]
                 chunk_vectors = embedding_provider.embed_documents(chunk_texts)
-                provider_name = type(embedding_provider).__name__
+                model_identifier = getattr(embedding_provider, "model", None) or type(embedding_provider).__name__
                 provider_dim = embedding_provider.dimension
 
                 for idx, chunk_data in enumerate(raw_chunks):
@@ -193,7 +193,7 @@ class DocumentService:
                         token_count=chunk_data.token_count,
                         metadata_json=chunk_data.metadata,
                         embedding=vec,
-                        embedding_model=provider_name,
+                        embedding_model=model_identifier,
                         embedding_dimension=provider_dim,
                     )
                     db_chunks.append(db_chunk)
@@ -229,10 +229,15 @@ class DocumentService:
 
         except Exception as exc:
             logger.error(f"Failed to ingest document '{original_filename}': {exc}", exc_info=True)
-            doc.status = "FAILED"
-            doc.error_message = str(exc)
-            await db.commit()
-            await db.refresh(doc)
+            try:
+                await db.rollback()
+                doc.status = "FAILED"
+                doc.error_message = str(exc)[:1000]
+                db.add(doc)
+                await db.commit()
+                await db.refresh(doc)
+            except Exception as commit_exc:
+                logger.error(f"Failed to persist FAILED status for document '{doc.id}': {commit_exc}")
             raise
 
     @staticmethod

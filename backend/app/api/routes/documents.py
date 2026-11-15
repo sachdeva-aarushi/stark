@@ -157,6 +157,7 @@ async def list_documents(
             content_type=doc.content_type,
             file_size=doc.file_size,
             status=doc.status,
+            error_message=doc.error_message,
             page_count=doc.page_count,
             chunk_count=doc.chunk_count,
             checksum=doc.checksum,

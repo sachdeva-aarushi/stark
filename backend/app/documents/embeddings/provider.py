@@ -2,7 +2,9 @@
 
 from abc import ABC, abstractmethod
 import hashlib
+import os
 import re
+import time
 from typing import List, Optional
 import numpy as np
 
@@ -165,6 +167,109 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         return [item.embedding for item in res.data]
 
 
+class GoogleEmbeddingProvider(EmbeddingProvider):
+    """Google Gemini embedding provider using official Google Gemini API (gemini-embedding-001).
+
+    Generates high-fidelity 768-dimensional text embeddings with batching and exponential
+    backoff retry for rate limits and transient connection issues. Eliminates local PyTorch
+    inference to operate well within Render's 512 MB memory limit.
+    """
+
+    def __init__(
+        self,
+        model: str = "gemini-embedding-001",
+        api_key: Optional[str] = None,
+        dimension: int = 768,
+    ) -> None:
+        self.model = model
+        self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
+        self._dim = dimension
+        if not self.api_key:
+            logger.warning("GEMINI_API_KEY not configured for GoogleEmbeddingProvider.")
+
+        # Google API expects 'models/gemini-embedding-001'
+        self._model_path = model if model.startswith("models/") else f"models/{model}"
+
+    @property
+    def dimension(self) -> int:
+        return self._dim
+
+    def _execute_with_retry(self, fn, *args, **kwargs):
+        """Execute Google API call with exponential backoff on 429/temporary errors."""
+        import time
+        max_retries = 3
+        backoff_sec = 1.0
+        last_exc = None
+        for attempt in range(max_retries):
+            try:
+                return fn(*args, **kwargs)
+            except Exception as exc:
+                last_exc = exc
+                err_str = str(exc).lower()
+                is_rate_limit = "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str
+                is_transient = "timeout" in err_str or "connection" in err_str or "temporarily" in err_str
+                if (is_rate_limit or is_transient) and attempt < max_retries - 1:
+                    sleep_time = backoff_sec * (2 ** attempt)
+                    logger.warning(
+                        f"Google Gemini Embedding attempt {attempt + 1} failed ({exc}). Retrying in {sleep_time:.1f}s..."
+                    )
+                    time.sleep(sleep_time)
+                else:
+                    break
+        raise last_exc
+
+    def embed_query(self, text: str) -> List[float]:
+        """Generate embedding vector for a single query using task_type='retrieval_query'."""
+        if not text:
+            return [0.0] * self._dim
+
+        import google.generativeai as genai
+        genai.configure(api_key=self.api_key)
+
+        def _call():
+            res = genai.embed_content(
+                model=self._model_path,
+                content=text,
+                task_type="retrieval_query",
+                output_dimensionality=self._dim,
+            )
+            return res["embedding"]
+
+        return self._execute_with_retry(_call)
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for a batch of documents using task_type='retrieval_document'."""
+        if not texts:
+            return []
+
+        import google.generativeai as genai
+        genai.configure(api_key=self.api_key)
+
+        batch_size = 100
+        all_embeddings: List[List[float]] = []
+
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i : i + batch_size]
+            sanitized_batch = [t if t.strip() else " " for t in batch]
+
+            def _call_batch():
+                res = genai.embed_content(
+                    model=self._model_path,
+                    content=sanitized_batch,
+                    task_type="retrieval_document",
+                    output_dimensionality=self._dim,
+                )
+                embeddings = res["embedding"]
+                if embeddings and isinstance(embeddings[0], (int, float)):
+                    return [embeddings]
+                return embeddings
+
+            batch_res = self._execute_with_retry(_call_batch)
+            all_embeddings.extend(batch_res)
+
+        return all_embeddings
+
+
 _embedding_provider_instance: Optional[EmbeddingProvider] = None
 
 
@@ -175,7 +280,13 @@ def get_embedding_provider() -> EmbeddingProvider:
         settings = get_settings()
         provider_type = settings.EMBEDDING_PROVIDER.lower().strip()
 
-        if provider_type == "mock":
+        if provider_type in ("google", "gemini"):
+            _embedding_provider_instance = GoogleEmbeddingProvider(
+                model=settings.EMBEDDING_MODEL,
+                api_key=settings.GEMINI_API_KEY,
+                dimension=settings.EMBEDDING_DIMENSION,
+            )
+        elif provider_type == "mock":
             _embedding_provider_instance = MockEmbeddingProvider(
                 dimension=settings.EMBEDDING_DIMENSION
             )

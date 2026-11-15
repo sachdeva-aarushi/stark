@@ -154,7 +154,7 @@ export default function KnowledgePage() {
               Knowledge Base & RAG Corpus
             </h1>
             <p className="text-sm text-zinc-500 mt-1 font-sans">
-              Supabase Storage Private Bucket connected • pgvector 384-dim active
+              Supabase Storage Private Bucket connected • pgvector 768-dim active (Google Gemini)
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -217,7 +217,7 @@ export default function KnowledgePage() {
             {isUploading ? (
               <div className="space-y-3">
                 <div className="w-12 h-12 mx-auto border-4 border-zinc-900 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm font-medium text-zinc-800 font-sans">Processing & generating 384-dim vector embeddings...</p>
+                <p className="text-sm font-medium text-zinc-800 font-sans">Processing & generating 768-dim vector embeddings with Google Gemini...</p>
                 <div className="w-full max-w-xs mx-auto bg-zinc-200 rounded-full h-2 overflow-hidden">
                   <div className="bg-zinc-900 h-2 transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
                 </div>
@@ -274,10 +274,15 @@ export default function KnowledgePage() {
                       <td className="py-4 px-6">
                         <div className="font-medium text-zinc-900 font-serif">{doc.original_filename}</div>
                         <div className="text-xs text-zinc-400 font-mono mt-0.5">{doc.filename}</div>
+                        {doc.status === "FAILED" && doc.error_message && (
+                          <div className="mt-1.5 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700 font-sans max-w-md break-words">
+                            <span className="font-medium">Failure Reason:</span> {doc.error_message}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4 px-6">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             doc.status === "COMPLETED"
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               : doc.status === "PROCESSING"
@@ -285,6 +290,12 @@ export default function KnowledgePage() {
                               : "bg-red-50 text-red-700 border border-red-200"
                           }`}
                         >
+                          {doc.status === "PROCESSING" && (
+                            <svg className="animate-spin h-3 w-3 text-amber-700" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                          )}
                           {doc.status}
                         </span>
                       </td>
