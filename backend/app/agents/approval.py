@@ -4,7 +4,9 @@ Implements the Human Approval Gate using LangGraph interrupt() semantics.
 Suspends workflow execution to await human reviewer feedback or approval.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+from langchain_core.runnables import RunnableConfig
+from langgraph.config import var_child_runnable_config
 from langgraph.types import interrupt
 
 from backend.app.core.config import get_settings
@@ -14,7 +16,10 @@ from backend.app.graph.state import WorkflowState
 logger = get_logger(__name__)
 
 
-async def human_approval_node(state: WorkflowState) -> Dict[str, Any]:
+async def human_approval_node(
+    state: WorkflowState,
+    config: Optional[RunnableConfig] = None,
+) -> Dict[str, Any]:
     """Execute the Human Approval Gate node.
 
     If approvals are enabled, pauses workflow execution using interrupt()
@@ -23,6 +28,7 @@ async def human_approval_node(state: WorkflowState) -> Dict[str, Any]:
 
     Args:
         state: Current WorkflowState.
+        config: Optional RunnableConfig context from LangGraph execution.
 
     Returns:
         State update dictionary containing approval_status, approval_decision,
@@ -53,19 +59,28 @@ async def human_approval_node(state: WorkflowState) -> Dict[str, Any]:
         )
     )
 
-    # Interrupt execution and persist checkpoint for reviewer review
-    decision_payload = interrupt({
-        "type": "human_approval",
-        "run_id": run_id,
-        "request_id": request_id,
-        "user_query": state.get("user_query"),
-        "final_answer": state.get("final_answer"),
-        "retrieved_documents": state.get("retrieved_documents"),
-        "analysis_results": state.get("analysis_results"),
-        "validation_results": state.get("validation_results"),
-        "revision_count": current_revision,
-        "max_revisions": settings.MAX_APPROVAL_REVISIONS,
-    })
+    # Ensure RunnableConfig context is bound for get_config() in Python 3.10 async tasks
+    cfg_token = None
+    if config is not None and var_child_runnable_config.get() is None:
+        cfg_token = var_child_runnable_config.set(config)
+
+    try:
+        # Interrupt execution and persist checkpoint for reviewer review
+        decision_payload = interrupt({
+            "type": "human_approval",
+            "run_id": run_id,
+            "request_id": request_id,
+            "user_query": state.get("user_query"),
+            "final_answer": state.get("final_answer"),
+            "retrieved_documents": state.get("retrieved_documents"),
+            "analysis_results": state.get("analysis_results"),
+            "validation_results": state.get("validation_results"),
+            "revision_count": current_revision,
+            "max_revisions": settings.MAX_APPROVAL_REVISIONS,
+        })
+    finally:
+        if cfg_token is not None:
+            var_child_runnable_config.reset(cfg_token)
 
     if not isinstance(decision_payload, dict):
         decision_payload = {"decision": str(decision_payload)}

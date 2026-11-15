@@ -395,7 +395,14 @@ async def resume_workflow(
         )
 
     # Resume graph execution using Command(resume=...)
-    graph = get_compiled_workflow()
+    if run and run.metadata_json and run.metadata_json.get("is_custom_pipeline") and run.metadata_json.get("agent_sequence"):
+        graph = build_custom_workflow_graph(
+            agent_sequence=run.metadata_json["agent_sequence"],
+            approval_required=True,
+            checkpointer=get_checkpointer(),
+        )
+    else:
+        graph = get_compiled_workflow()
     thread_config = {"configurable": {"thread_id": str(run_id)}}
     resume_payload = {
         "decision": dec_upper,
