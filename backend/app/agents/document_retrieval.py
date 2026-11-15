@@ -56,8 +56,13 @@ async def document_retrieval_agent(state: WorkflowState) -> Dict[str, Any]:
         if plan_goal and plan_goal != user_query and len(plan_goal) < 200:
             search_query = f"{user_query} {plan_goal}"
 
-        # Execute semantic retrieval
-        retrieval_result = RetrievalService.retrieve(search_query)
+        # Execute semantic retrieval (pgvector with automatic fallback)
+        try:
+            async with get_db_context() as db:
+                retrieval_result = await RetrievalService.retrieve_pgvector(db, search_query)
+        except Exception as err:
+            logger.warning(f"pgvector retrieval failed, falling back to FAISS: {err}")
+            retrieval_result = RetrievalService.retrieve(search_query)
 
         duration_ms = int((time.perf_counter() - start_time) * 1000)
         retrieved_dicts = [chunk.model_dump() for chunk in retrieval_result.results]

@@ -14,21 +14,33 @@ class DocumentUploadResponse(BaseModel):
     status: str = Field(..., description="Ingestion status: COMPLETED, PENDING, FAILED")
     page_count: int = Field(default=1, description="Total pages extracted from document")
     chunk_count: int = Field(default=0, description="Total chunks generated and indexed")
+    workspace_id: Optional[uuid.UUID] = Field(default=None, description="Workspace UUID")
+    storage_path: Optional[str] = Field(default=None, description="Supabase Storage path")
 
 
 class DocumentSummary(BaseModel):
     """Summary representation for document listings."""
 
     document_id: uuid.UUID = Field(..., description="Unique document UUID")
+    id: Optional[uuid.UUID] = Field(default=None, description="Alias for document_id")
     filename: str = Field(..., description="Stored filename")
     original_filename: str = Field(..., description="Original uploaded filename")
     content_type: str = Field(..., description="MIME content type")
     file_size: int = Field(..., description="File size in bytes")
+    file_size_bytes: Optional[int] = Field(default=None, description="Alias for file_size")
     status: str = Field(..., description="Ingestion lifecycle status")
     page_count: int = Field(default=1, description="Number of pages")
     chunk_count: int = Field(default=0, description="Number of chunks")
     checksum: str = Field(..., description="SHA-256 digest")
     created_at: datetime = Field(..., description="Timestamp of upload")
+    workspace_id: Optional[uuid.UUID] = Field(default=None, description="Workspace UUID")
+    storage_path: Optional[str] = Field(default=None, description="Supabase Storage path")
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.id is None:
+            self.id = self.document_id
+        if self.file_size_bytes is None:
+            self.file_size_bytes = self.file_size
 
 
 class DocumentListResponse(BaseModel):
@@ -54,6 +66,8 @@ class DocumentDetailResponse(BaseModel):
     chunk_count: int = Field(..., description="Chunk count")
     error_message: Optional[str] = Field(default=None, description="Error explanation if ingestion failed")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Custom document metadata")
+    workspace_id: Optional[uuid.UUID] = Field(default=None, description="Workspace UUID")
+    storage_path: Optional[str] = Field(default=None, description="Supabase Storage path")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

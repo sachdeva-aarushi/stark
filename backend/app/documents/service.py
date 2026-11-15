@@ -1,4 +1,4 @@
-"""Document service handling ingestion, deduplication, chunking, indexing, and deletion."""
+"""Document service handling ingestion, deduplication, chunking, pgvector indexing, and deletion."""
 
 import hashlib
 import uuid
@@ -12,16 +12,30 @@ from backend.app.core.config import get_settings
 from backend.app.core.logging import get_logger
 from backend.app.db.models.document import Document
 from backend.app.db.models.document_chunk import DocumentChunk
+from backend.app.db.models.workspace import Workspace
 from backend.app.documents.chunking.splitter import DocumentSplitter
 from backend.app.documents.embeddings.provider import get_embedding_provider
 from backend.app.documents.loaders import get_document_loader
 from backend.app.documents.vectorstore.faiss_store import get_vector_store
+from backend.app.services.storage import SupabaseStorageService
 
 logger = get_logger(__name__)
+
+DEFAULT_WORKSPACE_ID = uuid.UUID("69b87246-a2bb-4c67-bfc1-2167595be2db")
 
 
 class DocumentService:
     """Service layer managing document ingestion and vector synchronization."""
+
+    @staticmethod
+    async def _resolve_workspace_id(db: AsyncSession, workspace_id: Optional[uuid.UUID]) -> Optional[uuid.UUID]:
+        if workspace_id:
+            return workspace_id
+        # Look up default stark-demo workspace
+        stmt = select(Workspace.id).where(Workspace.slug == "stark-demo").limit(1)
+        res = await db.execute(stmt)
+        ws_id = res.scalar_one_or_none()
+        return ws_id or DEFAULT_WORKSPACE_ID
 
     @staticmethod
     async def ingest_document(
@@ -30,19 +44,22 @@ class DocumentService:
         original_filename: str,
         content_type: str = "application/octet-stream",
         metadata: Optional[Dict[str, Any]] = None,
+        workspace_id: Optional[uuid.UUID] = None,
     ) -> Document:
         """Execute end-to-end document ingestion pipeline.
 
         1. Validates file format and size limits.
         2. Computes SHA-256 for duplicate avoidance.
-        3. Persists file to secure local disk location.
+        3. Uploads file to private Supabase Storage bucket and stores locally for parsing.
         4. Extracts text pages preserving page numbering.
         5. Segments text into structured chunks.
-        6. Generates embeddings and updates FAISS index.
-        7. Persists document and chunk metadata in PostgreSQL.
+        6. Generates embeddings and stores in PostgreSQL pgvector.
+        7. Synchronizes vectors in FAISS store for backward compatibility.
+        8. Persists document and chunk metadata in PostgreSQL.
         """
         settings = get_settings()
         meta = metadata or {}
+        ws_id = await DocumentService._resolve_workspace_id(db, workspace_id)
 
         # 1. Validation
         max_bytes = settings.MAX_DOCUMENT_SIZE_MB * 1024 * 1024
@@ -64,6 +81,9 @@ class DocumentService:
             Document.checksum == checksum,
             Document.status == "COMPLETED",
         )
+        if ws_id:
+            existing_stmt = existing_stmt.where(Document.workspace_id == ws_id)
+
         existing_res = await db.execute(existing_stmt)
         existing_doc = existing_res.scalar_one_or_none()
         if existing_doc:
@@ -93,10 +113,11 @@ class DocumentService:
                     vector_store.add_vectors(vecs, metas)
             return existing_doc
 
-        # 3. Secure disk storage
+        # 3. Storage Setup (Local parsing cache + Supabase Storage)
         doc_id = uuid.uuid4()
         file_ext = Path(original_filename).suffix.lower()
         storage_filename = f"{doc_id}{file_ext}"
+        storage_path = f"{ws_id}/{storage_filename}" if ws_id else storage_filename
 
         storage_dir = Path(settings.DOCUMENT_STORAGE_PATH)
         storage_dir.mkdir(parents=True, exist_ok=True)
@@ -104,6 +125,16 @@ class DocumentService:
 
         with open(stored_path, "wb") as f:
             f.write(file_bytes)
+
+        # Upload to Supabase Storage private bucket
+        try:
+            await SupabaseStorageService.upload_file(
+                file_bytes=file_bytes,
+                destination_path=storage_path,
+                content_type=content_type,
+            )
+        except Exception as storage_err:
+            logger.warning(f"Supabase Storage upload warning: {storage_err}")
 
         # 4. Create Initial DB Record
         doc = Document(
@@ -117,6 +148,8 @@ class DocumentService:
             page_count=1,
             chunk_count=0,
             metadata_json=meta,
+            workspace_id=ws_id,
+            storage_path=storage_path,
         )
         db.add(doc)
         await db.commit()
@@ -142,9 +175,13 @@ class DocumentService:
                 embedding_provider = get_embedding_provider()
                 chunk_texts = [c.content for c in raw_chunks]
                 chunk_vectors = embedding_provider.embed_documents(chunk_texts)
+                provider_name = type(embedding_provider).__name__
+                provider_dim = embedding_provider.dimension
 
-                for chunk_data in raw_chunks:
+                for idx, chunk_data in enumerate(raw_chunks):
                     chunk_id = uuid.uuid4()
+                    vec = chunk_vectors[idx] if idx < len(chunk_vectors) else None
+
                     db_chunk = DocumentChunk(
                         id=chunk_id,
                         document_id=doc.id,
@@ -155,6 +192,9 @@ class DocumentService:
                         end_char=chunk_data.end_char,
                         token_count=chunk_data.token_count,
                         metadata_json=chunk_data.metadata,
+                        embedding=vec,
+                        embedding_model=provider_name,
+                        embedding_dimension=provider_dim,
                     )
                     db_chunks.append(db_chunk)
 
@@ -165,10 +205,11 @@ class DocumentService:
                             "filename": original_filename,
                             "page_number": chunk_data.page_number,
                             "content": chunk_data.content,
+                            "workspace_id": str(ws_id) if ws_id else None,
                         }
                     )
 
-                # 7. Index in FAISS
+                # 7. Index in FAISS for fallback/legacy support
                 vector_store = get_vector_store()
                 vector_store.add_vectors(chunk_vectors, chunk_metadata_list)
 
@@ -182,7 +223,7 @@ class DocumentService:
 
             logger.info(
                 f"Successfully ingested document '{original_filename}' (ID: {doc.id}): "
-                f"{doc.page_count} pages, {doc.chunk_count} chunks indexed."
+                f"{doc.page_count} pages, {doc.chunk_count} chunks indexed in pgvector."
             )
             return doc
 
@@ -197,21 +238,24 @@ class DocumentService:
     @staticmethod
     async def list_documents(
         db: AsyncSession,
+        workspace_id: Optional[uuid.UUID] = None,
         page: int = 1,
         page_size: int = 20,
     ) -> Tuple[List[Document], int]:
-        """Fetch paginated list of ingested documents."""
+        """Fetch paginated list of ingested documents, optionally filtered by workspace."""
         count_stmt = select(func.count(Document.id))
+        if workspace_id:
+            count_stmt = count_stmt.where(Document.workspace_id == workspace_id)
+
         count_res = await db.execute(count_stmt)
         total = count_res.scalar() or 0
 
         offset = max(0, (page - 1) * page_size)
-        query = (
-            select(Document)
-            .order_by(Document.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
+        query = select(Document)
+        if workspace_id:
+            query = query.where(Document.workspace_id == workspace_id)
+
+        query = query.order_by(Document.created_at.desc()).offset(offset).limit(page_size)
         res = await db.execute(query)
         items = list(res.scalars().all())
 
@@ -236,7 +280,7 @@ class DocumentService:
         db: AsyncSession,
         document_id: uuid.UUID,
     ) -> bool:
-        """Delete document, its chunks, associated vectors, and stored disk file."""
+        """Delete document, its chunks, associated pgvector embeddings, Supabase Storage file, and local cache."""
         doc = await DocumentService.get_document(db, document_id)
         if not doc:
             return False
@@ -245,7 +289,14 @@ class DocumentService:
         vector_store = get_vector_store()
         vector_store.delete_document(str(document_id))
 
-        # 2. Remove physical file from disk
+        # 2. Remove from Supabase Storage
+        if doc.storage_path:
+            try:
+                await SupabaseStorageService.delete_file(doc.storage_path)
+            except Exception as e:
+                logger.warning(f"Failed to delete file from Supabase Storage: {e}")
+
+        # 3. Remove physical file from local disk cache
         settings = get_settings()
         file_path = Path(settings.DOCUMENT_STORAGE_PATH) / doc.filename
         if file_path.exists():
@@ -254,7 +305,7 @@ class DocumentService:
             except OSError as err:
                 logger.warning(f"Could not remove physical file {file_path}: {err}")
 
-        # 3. Delete from DB (cascades to chunks)
+        # 4. Delete from DB (cascades to chunks and pgvector embeddings)
         await db.delete(doc)
         await db.commit()
 
@@ -264,7 +315,7 @@ class DocumentService:
     @staticmethod
     async def rebuild_vector_index(db: AsyncSession) -> Dict[str, Any]:
         """Reconstruct entire FAISS index from completed document chunks in PostgreSQL."""
-        logger.info("Rebuilding FAISS vector store from database records...")
+        logger.info("Rebuilding vector store from database records...")
         stmt = (
             select(Document)
             .where(Document.status == "COMPLETED")
@@ -293,6 +344,7 @@ class DocumentService:
                         "filename": doc.original_filename,
                         "page_number": c.page_number,
                         "content": c.content,
+                        "workspace_id": str(doc.workspace_id) if doc.workspace_id else None,
                     }
                 )
                 total_chunks += 1

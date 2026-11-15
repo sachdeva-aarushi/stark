@@ -1,8 +1,9 @@
-"""Document management API routes for uploading, listing, viewing, and deleting documents."""
+"""Document management API routes for uploading, listing, viewing, searching, and deleting documents."""
 
 import uuid
-from typing import Any, Dict
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from typing import Any, Dict, Optional
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.config import get_settings
@@ -13,8 +14,10 @@ from backend.app.documents.schemas import (
     DocumentListResponse,
     DocumentSummary,
     DocumentUploadResponse,
+    RetrievalResult,
 )
 from backend.app.documents.service import DocumentService
+from backend.app.services.retrieval import RetrievalService
 
 logger = get_logger(__name__)
 
@@ -23,15 +26,24 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".markdown"}
 
 
+class DocumentSearchRequest(BaseModel):
+    """Request payload for semantic document search."""
+
+    query: str = Field(..., min_length=1, description="Natural language search query")
+    top_k: int = Field(default=5, ge=1, le=50, description="Maximum number of relevant chunks to retrieve")
+    workspace_id: Optional[str] = Field(default=None, description="Optional workspace UUID filter")
+
+
 @router.post(
     "",
     response_model=DocumentUploadResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Upload and ingest a document",
-    description="Uploads a PDF, plain text, or Markdown document, extracts text with page awareness, generates embeddings, and indexes chunks in FAISS.",
+    description="Uploads a PDF, plain text, or Markdown document, stores in Supabase Storage, extracts text, generates embeddings, and indexes in PostgreSQL pgvector.",
 )
 async def upload_document(
     file: UploadFile = File(...),
+    workspace_id: Optional[str] = Form(None),
     session: AsyncSession = Depends(get_db),
 ) -> DocumentUploadResponse:
     """Upload and process a document file into the vector knowledge base."""
@@ -69,6 +81,14 @@ async def upload_document(
             detail=f"File exceeds maximum allowed size of {settings.MAX_DOCUMENT_SIZE_MB}MB.",
         )
 
+    # Resolve workspace UUID
+    ws_uuid = None
+    if workspace_id:
+        try:
+            ws_uuid = uuid.UUID(workspace_id)
+        except ValueError:
+            pass
+
     # 4. Ingest document via DocumentService
     try:
         doc = await DocumentService.ingest_document(
@@ -76,6 +96,7 @@ async def upload_document(
             file_bytes=content,
             original_filename=filename,
             content_type=file.content_type or "application/octet-stream",
+            workspace_id=ws_uuid,
         )
     except ValueError as val_err:
         raise HTTPException(
@@ -95,6 +116,8 @@ async def upload_document(
         status=doc.status,
         page_count=doc.page_count,
         chunk_count=doc.chunk_count,
+        workspace_id=doc.workspace_id,
+        storage_path=doc.storage_path,
     )
 
 
@@ -103,16 +126,25 @@ async def upload_document(
     response_model=DocumentListResponse,
     status_code=status.HTTP_200_OK,
     summary="List ingested documents",
-    description="Returns a paginated list of documents with metadata, page counts, and indexing status.",
+    description="Returns a paginated list of documents with metadata, page counts, storage paths, and indexing status.",
 )
 async def list_documents(
+    workspace_id: Optional[str] = Query(default=None, description="Filter documents by workspace UUID"),
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
     session: AsyncSession = Depends(get_db),
 ) -> DocumentListResponse:
     """Retrieve paginated list of documents."""
+    ws_uuid = None
+    if workspace_id:
+        try:
+            ws_uuid = uuid.UUID(workspace_id)
+        except ValueError:
+            pass
+
     items, total = await DocumentService.list_documents(
         db=session,
+        workspace_id=ws_uuid,
         page=page,
         page_size=page_size,
     )
@@ -129,6 +161,8 @@ async def list_documents(
             chunk_count=doc.chunk_count,
             checksum=doc.checksum,
             created_at=doc.created_at,
+            workspace_id=doc.workspace_id,
+            storage_path=doc.storage_path,
         )
         for doc in items
     ]
@@ -138,6 +172,33 @@ async def list_documents(
         page=page,
         page_size=page_size,
         total=total,
+    )
+
+
+@router.post(
+    "/search",
+    response_model=RetrievalResult,
+    status_code=status.HTTP_200_OK,
+    summary="Semantic document search",
+    description="Searches the PostgreSQL pgvector knowledge base using cosine distance and returns ranked chunks with page citations.",
+)
+async def search_documents_endpoint(
+    request: DocumentSearchRequest,
+    session: AsyncSession = Depends(get_db),
+) -> RetrievalResult:
+    """Execute semantic query retrieval against the pgvector indexed knowledge base."""
+    ws_uuid = None
+    if request.workspace_id:
+        try:
+            ws_uuid = uuid.UUID(request.workspace_id)
+        except ValueError:
+            pass
+
+    return await RetrievalService.retrieve_pgvector(
+        db=session,
+        query=request.query,
+        top_k=request.top_k,
+        workspace_id=ws_uuid,
     )
 
 
@@ -180,6 +241,8 @@ async def get_document(
         chunk_count=doc.chunk_count,
         error_message=doc.error_message,
         metadata=doc.metadata_json or {},
+        workspace_id=doc.workspace_id,
+        storage_path=doc.storage_path,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
     )
@@ -189,13 +252,13 @@ async def get_document(
     "/{document_id}",
     status_code=status.HTTP_200_OK,
     summary="Delete a document",
-    description="Deletes a document from the database, deletes stored file, and removes associated vectors from FAISS.",
+    description="Deletes a document from the database, removes storage file from Supabase Storage, and cascades deletion to chunks and pgvector vectors.",
 )
 async def delete_document(
     document_id: str,
     session: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Delete a document and purge its vectors from FAISS."""
+    """Delete a document, purge vectors from pgvector and FAISS, and delete from Supabase Storage."""
     try:
         doc_uuid = uuid.UUID(document_id)
     except ValueError:
