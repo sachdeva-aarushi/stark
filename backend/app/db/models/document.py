@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
-from sqlalchemy import BigInteger, DateTime, Index, Integer, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,6 +37,13 @@ class Document(Base):
     page_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    workspace_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True).with_variant(String(36), "sqlite"),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    storage_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
 
     metadata_json: Mapped[Dict[str, Any]] = mapped_column(
         "metadata",

@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -35,6 +36,9 @@ class DocumentChunk(Base):
     start_char: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     end_char: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     token_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    embedding: Mapped[Optional[Any]] = mapped_column(Vector(384), nullable=True)
+    embedding_model: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    embedding_dimension: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     metadata_json: Mapped[Dict[str, Any]] = mapped_column(
         "metadata",

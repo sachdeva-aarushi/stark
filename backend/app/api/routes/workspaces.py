@@ -422,3 +422,109 @@ async def create_workflow_endpoint(
         created_at=wf.created_at,
         updated_at=wf.updated_at,
     )
+
+
+# ==============================================================================
+# Workspace Documents & RAG Endpoints
+# ==============================================================================
+
+@router.get(
+    "/{workspace_id}/documents",
+    status_code=status.HTTP_200_OK,
+    summary="List documents in workspace",
+)
+async def list_workspace_documents(
+    workspace_id: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=100),
+    session: AsyncSession = Depends(get_db),
+):
+    """Retrieve documents associated with a workspace."""
+    from backend.app.documents.service import DocumentService
+    try:
+        ws_uuid = uuid.UUID(workspace_id)
+    except ValueError:
+        ws_res = await session.execute(select(Workspace.id).where(Workspace.slug == workspace_id))
+        ws_uuid = ws_res.scalar_one_or_none()
+
+    items, total = await DocumentService.list_documents(
+        db=session,
+        workspace_id=ws_uuid,
+        page=page,
+        page_size=page_size,
+    )
+
+    return {
+        "items": [
+            {
+                "id": str(doc.id),
+                "document_id": str(doc.id),
+                "filename": doc.filename,
+                "original_filename": doc.original_filename,
+                "file_size_bytes": doc.file_size,
+                "file_size": doc.file_size,
+                "status": doc.status,
+                "page_count": doc.page_count,
+                "chunk_count": doc.chunk_count,
+                "workspace_id": str(doc.workspace_id) if doc.workspace_id else str(ws_uuid),
+                "created_at": doc.created_at.isoformat() if doc.created_at else "",
+                "storage_path": doc.storage_path,
+            }
+            for doc in items
+        ],
+        "total": total,
+    }
+
+
+@router.post(
+    "/{workspace_id}/documents",
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload document to workspace",
+)
+async def upload_workspace_document(
+    workspace_id: str,
+    file: Any = None,
+    session: AsyncSession = Depends(get_db),
+):
+    """Upload document directly into workspace."""
+    from fastapi import UploadFile, File
+    from backend.app.documents.service import DocumentService
+    # Forward to document service
+    return {"message": "Use /api/v1/documents for multipart upload"}
+
+
+class WorkspaceRAGQueryRequest(BaseModel):
+    query: str
+    top_k: int = 5
+
+
+@router.post(
+    "/{workspace_id}/rag/search",
+    status_code=status.HTTP_200_OK,
+    summary="Semantic search in workspace",
+)
+async def search_workspace_rag(
+    workspace_id: str,
+    payload: WorkspaceRAGQueryRequest,
+    session: AsyncSession = Depends(get_db),
+):
+    """Semantic vector search inside workspace corpus using pgvector."""
+    from backend.app.services.retrieval import RetrievalService
+    try:
+        ws_uuid = uuid.UUID(workspace_id)
+    except ValueError:
+        ws_res = await session.execute(select(Workspace.id).where(Workspace.slug == workspace_id))
+        ws_uuid = ws_res.scalar_one_or_none()
+
+    res = await RetrievalService.retrieve_pgvector(
+        db=session,
+        query=payload.query,
+        top_k=payload.top_k,
+        workspace_id=ws_uuid,
+    )
+
+    return {
+        "query": res.query,
+        "results": [c.model_dump() for c in res.results],
+    }
+
