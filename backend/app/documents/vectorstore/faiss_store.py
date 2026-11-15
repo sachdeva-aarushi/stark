@@ -267,6 +267,14 @@ class FAISSVectorStore:
             try:
                 with open(meta_file, "r", encoding="utf-8") as f:
                     meta_data = json.load(f)
+                    saved_dim = meta_data.get("dimension")
+                    if saved_dim and saved_dim != self.dimension:
+                        logger.warning(
+                            f"FAISS index dimension mismatch: found {saved_dim}, expected {self.dimension}. Reinitializing clean index."
+                        )
+                        self._index = self._create_empty_index()
+                        self._metadata = []
+                        return False
                     self._metadata = meta_data.get("metadata", [])
 
                 if HAS_FAISS and index_file.exists():

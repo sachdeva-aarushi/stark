@@ -33,14 +33,18 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    """Return database URL from settings if available, else from alembic.ini."""
+    """Return database URL from environment or settings if available, else from alembic.ini."""
+    url = os.environ.get("DATABASE_URL")
+    if url:
+        return url.strip().strip("'\"")
     try:
         settings = get_settings()
         if settings.DATABASE_URL:
-            return settings.DATABASE_URL
-    except Exception:
-        pass
-    return config.get_main_option("sqlalchemy.url", "postgresql+asyncpg://postgres:postgres@localhost:5432/workflow_db")
+            return settings.DATABASE_URL.strip().strip("'\"")
+    except Exception as exc:
+        print(f"[Alembic] Warning loading settings: {exc}")
+    fallback = config.get_main_option("sqlalchemy.url", "postgresql+asyncpg://postgres:postgres@localhost:5432/workflow_db")
+    return fallback.strip().strip("'\"")
 
 
 def run_migrations_offline() -> None:
@@ -65,8 +69,16 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode using async engine."""
+    url = get_url()
+    try:
+        from sqlalchemy.engine import make_url
+        parsed = make_url(url)
+        print(f"[Alembic] Connecting to database host: '{parsed.host}', port: {parsed.port}, user: '{parsed.username}'")
+    except Exception as exc:
+        print(f"[Alembic] Note: Could not parse database URL for logging: {exc}")
+
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = get_url()
+    configuration["sqlalchemy.url"] = url
 
     connectable = async_engine_from_config(
         configuration,

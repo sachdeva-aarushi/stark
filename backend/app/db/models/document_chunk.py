@@ -36,7 +36,7 @@ class DocumentChunk(Base):
     start_char: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     end_char: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     token_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    embedding: Mapped[Optional[Any]] = mapped_column(Vector(384), nullable=True)
+    embedding: Mapped[Optional[Any]] = mapped_column(Vector(768), nullable=True)
     embedding_model: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     embedding_dimension: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 

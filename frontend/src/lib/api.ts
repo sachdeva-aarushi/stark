@@ -736,6 +736,7 @@ export interface DocumentRecord {
   page_count: number;
   chunk_count: number;
   status: "COMPLETED" | "PROCESSING" | "FAILED";
+  error_message?: string | null;
   workspace_id: string;
   created_at: string;
 }

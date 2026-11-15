@@ -47,9 +47,10 @@ class Settings(BaseSettings):
     # Document & Vector Retrieval Settings (Milestone 3)
     DOCUMENT_STORAGE_PATH: str = Field(default="./data/documents", description="Filesystem directory for uploaded documents")
     FAISS_INDEX_PATH: str = Field(default="./data/faiss", description="Filesystem directory for persisted FAISS index")
-    EMBEDDING_PROVIDER: str = Field(default="mock", description="Embedding provider: mock, local, openai")
-    EMBEDDING_MODEL: str = Field(default="sentence-transformers/all-MiniLM-L6-v2", description="Embedding model identifier")
-    EMBEDDING_DIMENSION: int = Field(default=384, description="Embedding vector dimension")
+    EMBEDDING_PROVIDER: str = Field(default="google", description="Embedding provider: google, local, openai, mock")
+    EMBEDDING_MODEL: str = Field(default="gemini-embedding-001", description="Embedding model identifier")
+    EMBEDDING_DIMENSION: int = Field(default=768, description="Embedding vector dimension")
+    GEMINI_API_KEY: Optional[str] = Field(default=None, description="Google Gemini API key")
     CHUNK_SIZE: int = Field(default=1000, description="Target chunk size in characters")
     CHUNK_OVERLAP: int = Field(default=150, description="Chunk overlap in characters")
     TOP_K_RETRIEVAL: int = Field(default=5, description="Number of top relevant chunks to retrieve")
@@ -83,6 +84,14 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=True,
     )
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def clean_database_url(cls, value: str) -> str:
+        """Strip leading/trailing whitespace and quotes from database URL."""
+        if isinstance(value, str):
+            return value.strip().strip("'\"")
+        return value
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
