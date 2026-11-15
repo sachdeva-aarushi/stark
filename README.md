@@ -1,38 +1,24 @@
-::: {align="center"}
-# STARK
+<div align="center">
 
-### Autonomous workflows. Controlled execution.
+<h1>STARK</h1>
+<h3>Autonomous workflows. Controlled execution.</h3>
+<p>An AI workflow orchestration platform for designing, executing, and supervising multi-agent systems.</p>
 
-**An AI workflow orchestration platform for designing, executing, and
-supervising multi-agent systems.**
+<p>
+  <img src="https://img.shields.io/badge/Python-3.10%2B-315B75?style=flat-square&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/API-FastAPI-2F6F63?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Orchestration-LangGraph-4B5563?style=flat-square" alt="LangGraph">
+  <img src="https://img.shields.io/badge/Data-PostgreSQL-416987?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Vector-pgvector-416987?style=flat-square" alt="pgvector">
+  <img src="https://img.shields.io/badge/Frontend-React-397A8A?style=flat-square&logo=react&logoColor=white" alt="React">
+</p>
 
-`<br/>`{=html}
+<p><a href="#overview">Overview</a> · <a href="#system-design">Architecture</a> · <a href="#technical-implementation">Implementation</a> · <a href="#engineering-and-release-discipline">Engineering</a></p>
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-315B75?style=flat-square&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/API-FastAPI-2F6F63?style=flat-square&logo=fastapi&logoColor=white)
-![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-4B5563?style=flat-square)
-![PostgreSQL](https://img.shields.io/badge/Data-PostgreSQL-416987?style=flat-square&logo=postgresql&logoColor=white)
-![pgvector](https://img.shields.io/badge/Vector-pgvector-416987?style=flat-square)
-![React](https://img.shields.io/badge/Frontend-React-397A8A?style=flat-square&logo=react&logoColor=white)
+</div>
 
-`<br/>`{=html}
+---
 
-[Overview](#overview) · [Architecture](#system-design) ·
-[Implementation](#technical-implementation) ·
-[Roadmap](#engineering-roadmap)
-:::
-
-------------------------------------------------------------------------
-
-> **Project status:** STARK is being developed from an existing
-> open-source multi-agent workflow platform. The upstream project
-> currently provides a React/Vite interface, FastAPI backend, LangGraph
-> orchestration, PostgreSQL persistence, FAISS-based retrieval, MCP tool
-> integration, approval flows, and an evaluation console. Supabase
-> PostgreSQL, pgvector, and Supabase Auth are the target infrastructure
-> for the STARK implementation. Features described as target
-> capabilities below must not be interpreted as completed until they are
-> implemented and verified in this repository.
 
 ## Overview
 
@@ -1310,7 +1296,7 @@ New STARK-specific code should have its licensing terms stated
 explicitly by the maintainers. Do not imply that inherited components
 were originally authored by the STARK team.
 
-------------------------------------------------------------------------
+---
 
 ::: {align="center"}
 **STARK**
