@@ -1,0 +1,93 @@
+"""Test configuration and shared fixtures."""
+
+import os
+import sys
+from pathlib import Path
+import pytest
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+# Ensure repository root is on sys.path
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+# Set test environment
+os.environ["APP_ENV"] = "test"
+os.environ["LLM_PROVIDER"] = "mock"
+os.environ["APPROVAL_ENABLED"] = "false"
+if "TEST_DATABASE_URL" in os.environ:
+    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+elif Path("/.dockerenv").exists():
+    os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@postgres:5432/test_db"
+else:
+    os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
+
+from backend.app.core.config import get_settings
+from backend.app.db.base import Base
+from backend.app.db.session import (
+    close_database_connection,
+    get_async_engine,
+    get_db,
+    get_session_factory,
+)
+from backend.app.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def reset_settings():
+    """Ensure settings cache is refreshed for tests."""
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def setup_test_db():
+    """Ensure database schema is created and analytics dataset is seeded for the test session."""
+    engine = get_async_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        
+        # Ensure validation and approval columns exist if table was previously created
+        from sqlalchemy import text
+        await conn.execute(text("ALTER TABLE workflow_runs ADD COLUMN IF NOT EXISTS validation_status VARCHAR(32);"))
+        await conn.execute(text("ALTER TABLE workflow_runs ADD COLUMN IF NOT EXISTS validation_score FLOAT;"))
+        await conn.execute(text("ALTER TABLE workflow_runs ADD COLUMN IF NOT EXISTS approval_status VARCHAR(32);"))
+        
+        # Check and seed analytics_orders if empty
+        from sqlalchemy import func, select, insert
+        import uuid
+        from backend.app.db.models.analytics_order import AnalyticsOrder
+        from backend.app.analysis.service import DataAnalysisService
+        
+        cnt = (await conn.execute(select(func.count()).select_from(AnalyticsOrder))).scalar()
+        if cnt == 0:
+            rows, _ = DataAnalysisService._load_dataset("orders")
+            orders_to_insert = [{**row, "id": uuid.uuid4()} for row in rows]
+            await conn.execute(insert(AnalyticsOrder), orders_to_insert)
+
+    yield
+    await close_database_connection()
+
+
+@pytest.fixture
+async def db_session():
+    """Fixture providing an active AsyncSession connected to test database."""
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        yield session
+
+
+@pytest.fixture
+def app():
+    """Fixture for FastAPI app instance."""
+    return create_app()
+
+
+@pytest.fixture
+async def async_client(app):
+    """Fixture for async HTTP client."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
