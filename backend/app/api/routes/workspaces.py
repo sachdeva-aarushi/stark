@@ -333,6 +333,114 @@ async def create_agent_endpoint(
     )
 
 
+def _agent_to_response(a: AgentDefinition) -> AgentDefinitionResponse:
+    """Helper to build AgentDefinitionResponse from ORM object."""
+    return AgentDefinitionResponse(
+        id=str(a.id),
+        workspace_id=str(a.workspace_id),
+        name=a.name,
+        description=a.description,
+        agent_type=a.agent_type,
+        system_instructions=a.system_instructions,
+        model_config_json=a.model_config_json or {},
+        tools=a.tools or [],
+        created_at=a.created_at,
+        updated_at=a.updated_at,
+    )
+
+
+@router.get(
+    "/{workspace_id}/agents/{agent_id}",
+    response_model=AgentDefinitionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get a single agent definition",
+)
+async def get_agent_endpoint(
+    workspace_id: str,
+    agent_id: str,
+    session: AsyncSession = Depends(get_db),
+) -> AgentDefinitionResponse:
+    """Retrieve a single agent definition by ID."""
+    try:
+        agent_uuid = uuid.UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid agent ID format.")
+
+    agent = await session.get(AgentDefinition, agent_uuid)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found.")
+
+    return _agent_to_response(agent)
+
+
+class AgentDefinitionUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=128)
+    description: Optional[str] = None
+    agent_type: Optional[str] = Field(default=None, max_length=64)
+    system_instructions: Optional[str] = None
+    model_config_json: Optional[Dict[str, Any]] = Field(default=None, alias="model_config")
+    tools: Optional[List[str]] = None
+
+    model_config = {"populate_by_name": True}
+
+
+@router.put(
+    "/{workspace_id}/agents/{agent_id}",
+    response_model=AgentDefinitionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update an agent definition",
+)
+async def update_agent_endpoint(
+    workspace_id: str,
+    agent_id: str,
+    payload: AgentDefinitionUpdate,
+    session: AsyncSession = Depends(get_db),
+) -> AgentDefinitionResponse:
+    """Update an existing agent definition."""
+    try:
+        agent_uuid = uuid.UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid agent ID format.")
+
+    agent = await session.get(AgentDefinition, agent_uuid)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found.")
+
+    update_data = payload.model_dump(exclude_unset=True, by_alias=False)
+    for field, value in update_data.items():
+        if value is not None:
+            setattr(agent, field, value)
+
+    await session.commit()
+    await session.refresh(agent)
+    return _agent_to_response(agent)
+
+
+@router.delete(
+    "/{workspace_id}/agents/{agent_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete an agent definition",
+)
+async def delete_agent_endpoint(
+    workspace_id: str,
+    agent_id: str,
+    session: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Delete an agent definition by ID."""
+    try:
+        agent_uuid = uuid.UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid agent ID format.")
+
+    agent = await session.get(AgentDefinition, agent_uuid)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found.")
+
+    await session.delete(agent)
+    await session.commit()
+    return {"deleted": True, "id": agent_id}
+
+
 # ==============================================================================
 # Workflow Definitions Endpoints
 # ==============================================================================
@@ -389,7 +497,9 @@ async def create_workflow_endpoint(
     payload: WorkflowDefinitionCreate,
     session: AsyncSession = Depends(get_db),
 ) -> WorkflowDefinitionResponse:
-    """Create a new workflow definition."""
+    """Create a new workflow definition with agent_sequence validation."""
+    from backend.app.graph.workflow import AVAILABLE_AGENT_NODES
+
     try:
         ws_uuid = uuid.UUID(workspace_id)
     except ValueError:
@@ -397,6 +507,22 @@ async def create_workflow_endpoint(
         ws_uuid = ws_res.scalar_one_or_none()
         if not ws_uuid:
             raise HTTPException(status_code=404, detail=f"Workspace '{workspace_id}' not found.")
+
+    # Validate agent_sequence
+    if not payload.agent_sequence or len(payload.agent_sequence) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Workflow agent_sequence cannot be empty.",
+        )
+
+    for agent_name in payload.agent_sequence:
+        cleaned = str(agent_name).strip().lower()
+        if cleaned not in AVAILABLE_AGENT_NODES:
+            valid = sorted(list(set(v[0] for v in AVAILABLE_AGENT_NODES.values())))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid agent '{agent_name}' in agent_sequence. Supported agents: {valid}",
+            )
 
     wf = WorkflowDefinition(
         id=uuid.uuid4(),
@@ -422,6 +548,219 @@ async def create_workflow_endpoint(
         created_at=wf.created_at,
         updated_at=wf.updated_at,
     )
+
+
+def _workflow_to_response(w: WorkflowDefinition) -> WorkflowDefinitionResponse:
+    """Helper to build WorkflowDefinitionResponse from ORM object."""
+    return WorkflowDefinitionResponse(
+        id=str(w.id),
+        workspace_id=str(w.workspace_id),
+        name=w.name,
+        description=w.description,
+        objective=w.objective,
+        agent_sequence=w.agent_sequence or [],
+        approval_required=w.approval_required,
+        created_at=w.created_at,
+        updated_at=w.updated_at,
+    )
+
+
+@router.get(
+    "/{workspace_id}/workflows/{workflow_id}",
+    response_model=WorkflowDefinitionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get a single workflow definition",
+)
+async def get_workflow_endpoint(
+    workspace_id: str,
+    workflow_id: str,
+    session: AsyncSession = Depends(get_db),
+) -> WorkflowDefinitionResponse:
+    """Retrieve a single workflow definition by ID."""
+    try:
+        wf_uuid = uuid.UUID(workflow_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid workflow ID format.")
+
+    wf = await session.get(WorkflowDefinition, wf_uuid)
+    if not wf:
+        raise HTTPException(status_code=404, detail=f"Workflow '{workflow_id}' not found.")
+
+    return _workflow_to_response(wf)
+
+
+class WorkflowDefinitionUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=128)
+    description: Optional[str] = None
+    objective: Optional[str] = None
+    agent_sequence: Optional[List[str]] = None
+    approval_required: Optional[bool] = None
+
+
+@router.put(
+    "/{workspace_id}/workflows/{workflow_id}",
+    response_model=WorkflowDefinitionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update a workflow definition",
+)
+async def update_workflow_endpoint(
+    workspace_id: str,
+    workflow_id: str,
+    payload: WorkflowDefinitionUpdate,
+    session: AsyncSession = Depends(get_db),
+) -> WorkflowDefinitionResponse:
+    """Update an existing workflow definition with agent_sequence validation."""
+    from backend.app.graph.workflow import AVAILABLE_AGENT_NODES
+
+    try:
+        wf_uuid = uuid.UUID(workflow_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid workflow ID format.")
+
+    wf = await session.get(WorkflowDefinition, wf_uuid)
+    if not wf:
+        raise HTTPException(status_code=404, detail=f"Workflow '{workflow_id}' not found.")
+
+    # Validate agent_sequence if provided
+    if payload.agent_sequence is not None:
+        if len(payload.agent_sequence) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Workflow agent_sequence cannot be empty.",
+            )
+        for agent_name in payload.agent_sequence:
+            cleaned = str(agent_name).strip().lower()
+            if cleaned not in AVAILABLE_AGENT_NODES:
+                valid = sorted(list(set(v[0] for v in AVAILABLE_AGENT_NODES.values())))
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid agent '{agent_name}' in agent_sequence. Supported agents: {valid}",
+                )
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        if value is not None:
+            setattr(wf, field, value)
+
+    await session.commit()
+    await session.refresh(wf)
+    return _workflow_to_response(wf)
+
+
+@router.delete(
+    "/{workspace_id}/workflows/{workflow_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete a workflow definition",
+)
+async def delete_workflow_endpoint(
+    workspace_id: str,
+    workflow_id: str,
+    session: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Delete a workflow definition by ID."""
+    try:
+        wf_uuid = uuid.UUID(workflow_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid workflow ID format.")
+
+    wf = await session.get(WorkflowDefinition, wf_uuid)
+    if not wf:
+        raise HTTPException(status_code=404, detail=f"Workflow '{workflow_id}' not found.")
+
+    await session.delete(wf)
+    await session.commit()
+    return {"deleted": True, "id": workflow_id}
+
+
+class WorkflowExecuteRequest(BaseModel):
+    query: str = Field(..., min_length=1, description="The query to execute through the workflow pipeline")
+
+
+class WorkflowExecuteResponse(BaseModel):
+    run_id: Optional[str] = None
+    status: str
+    answer: Optional[str] = None
+    key_points: List[str] = []
+    confidence: Optional[float] = None
+    agent_sequence: List[str] = []
+    approval_status: Optional[str] = None
+    errors: List[str] = []
+
+
+@router.post(
+    "/{workspace_id}/workflows/{workflow_id}/execute",
+    response_model=WorkflowExecuteResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Execute a saved workflow definition",
+)
+async def execute_workflow_endpoint(
+    workspace_id: str,
+    workflow_id: str,
+    payload: WorkflowExecuteRequest,
+    session: AsyncSession = Depends(get_db),
+) -> WorkflowExecuteResponse:
+    """Execute a saved workflow definition through the LangGraph custom pipeline engine.
+
+    Loads the workflow definition from the database, validates its agent_sequence,
+    and executes it through the dynamic graph builder.
+    """
+    from backend.app.graph.workflow import run_custom_workflow
+
+    try:
+        wf_uuid = uuid.UUID(workflow_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid workflow ID format.")
+
+    wf = await session.get(WorkflowDefinition, wf_uuid)
+    if not wf:
+        raise HTTPException(status_code=404, detail=f"Workflow '{workflow_id}' not found.")
+
+    if not wf.agent_sequence or len(wf.agent_sequence) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot execute workflow: agent_sequence is empty.",
+        )
+
+    try:
+        final_state = await run_custom_workflow(
+            agent_sequence=wf.agent_sequence,
+            query=payload.query,
+            approval_required=wf.approval_required,
+            workflow_id=str(wf.id),
+            workflow_name=wf.name,
+        )
+
+        final_answer = final_state.get("final_answer") or {}
+        errors = final_state.get("errors", [])
+        run_status = final_state.get("status", "completed")
+
+        return WorkflowExecuteResponse(
+            run_id=final_state.get("run_id"),
+            status=run_status.lower() if isinstance(run_status, str) else "completed",
+            answer=final_answer.get("answer") if isinstance(final_answer, dict) else str(final_answer),
+            key_points=final_answer.get("key_points", []) if isinstance(final_answer, dict) else [],
+            confidence=final_answer.get("confidence") if isinstance(final_answer, dict) else None,
+            agent_sequence=wf.agent_sequence or [],
+            approval_status=final_state.get("approval_status"),
+            errors=errors,
+        )
+
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except TimeoutError as te:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=str(te),
+        )
+    except Exception as exc:
+        logger.error(f"Workflow execution failed for '{workflow_id}': {exc}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Workflow execution failed: {str(exc)}",
+        )
 
 
 # ==============================================================================

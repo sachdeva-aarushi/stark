@@ -6,7 +6,7 @@ Integrates durable lifecycle persistence in PostgreSQL and checkpointing.
 """
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import uuid
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Command
@@ -511,4 +511,289 @@ async def resume_workflow(
         logger.error(format_log_msg(err_msg, req_id), exc_info=True)
         async with get_db_context() as session:
             await fail_workflow_run(session=session, run_id=run_id, errors=[err_msg])
+        raise
+
+
+# ==============================================================================
+# Dynamic Custom Workflow Pipeline Builder & Execution Engine
+# ==============================================================================
+
+AVAILABLE_AGENT_NODES = {
+    "planner": ("planner", plan_agent),
+    "document_retrieval": ("document_retrieval", document_retrieval_agent),
+    "retrieval": ("document_retrieval", document_retrieval_agent),
+    "data_analysis": ("data_analysis", data_analysis_agent),
+    "analysis": ("data_analysis", data_analysis_agent),
+    "researcher": ("researcher", research_agent),
+    "research": ("researcher", research_agent),
+    "responder": ("responder", response_agent),
+    "response": ("responder", response_agent),
+    "validation": ("validation", validation_agent),
+}
+
+
+def build_custom_workflow_graph(
+    agent_sequence: List[str],
+    approval_required: bool = True,
+    checkpointer: Optional[BaseCheckpointSaver] = None,
+) -> Any:
+    """Build and compile a LangGraph StateGraph strictly following the specified agent sequence.
+
+    Args:
+        agent_sequence: Ordered list of agent names (e.g. ['planner', 'researcher', 'responder'])
+        approval_required: Whether to append a human-in-the-loop approval gate
+        checkpointer: Optional durable checkpoint saver
+
+    Raises:
+        ValueError: If agent_sequence is empty or contains unsupported agent names.
+    """
+    if not agent_sequence or len(agent_sequence) == 0:
+        raise ValueError("Workflow agent_sequence cannot be empty.")
+
+    normalized_nodes = []
+    for idx, raw_name in enumerate(agent_sequence):
+        cleaned = str(raw_name).strip().lower()
+        if cleaned not in AVAILABLE_AGENT_NODES:
+            valid = sorted(list(set(v[0] for v in AVAILABLE_AGENT_NODES.values())))
+            raise ValueError(
+                f"Invalid agent '{raw_name}' at position {idx + 1}. Supported agents: {valid}"
+            )
+        canonical_name, agent_fn = AVAILABLE_AGENT_NODES[cleaned]
+        node_id = f"step_{idx}_{canonical_name}"
+        normalized_nodes.append((node_id, canonical_name, agent_fn))
+
+    graph_builder = StateGraph(WorkflowState)
+
+    # Register each agent node in the pipeline
+    for node_id, _, agent_fn in normalized_nodes:
+        graph_builder.add_node(node_id, agent_fn)
+
+    # Edge from START to first agent
+    graph_builder.add_edge(START, normalized_nodes[0][0])
+
+    # Linear edges connecting adjacent agents in configured sequence
+    for i in range(len(normalized_nodes) - 1):
+        graph_builder.add_edge(normalized_nodes[i][0], normalized_nodes[i + 1][0])
+
+    last_node_id = normalized_nodes[-1][0]
+
+    if approval_required:
+        graph_builder.add_node("human_approval", human_approval_node)
+        graph_builder.add_edge(last_node_id, "human_approval")
+
+        # If responder was part of the sequence, allow review revisions to route back to responder
+        responder_node_id = next(
+            (nid for nid, c, _ in reversed(normalized_nodes) if c == "responder"),
+            None,
+        )
+
+        def custom_approval_router(state: WorkflowState) -> str:
+            status = state.get("approval_status")
+            if status == "CHANGES_REQUESTED" and responder_node_id:
+                return responder_node_id
+            return END
+
+        destinations = {END: END}
+        if responder_node_id:
+            destinations[responder_node_id] = responder_node_id
+
+        graph_builder.add_conditional_edges(
+            "human_approval",
+            custom_approval_router,
+            destinations,
+        )
+    else:
+        graph_builder.add_edge(last_node_id, END)
+
+    return graph_builder.compile(checkpointer=checkpointer)
+
+
+async def run_custom_workflow(
+    agent_sequence: List[str],
+    query: str,
+    approval_required: bool = True,
+    workflow_id: Optional[str] = None,
+    workflow_name: Optional[str] = None,
+    request_id: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> WorkflowState:
+    """Execute a custom configured multi-agent workflow pipeline with PostgreSQL persistence.
+
+    Validates sequence, constructs dynamic graph, executes nodes, and updates WorkflowRun.
+    """
+    req_id = request_id or str(uuid.uuid4())
+    logger.info(
+        format_log_msg(
+            f"Running custom workflow '{workflow_name or 'Custom'}' with sequence {agent_sequence} for query '{query[:60]}...'",
+            req_id,
+        )
+    )
+
+    # 1. Configuration Validation (reject invalid before starting)
+    # build_custom_workflow_graph will raise ValueError if invalid
+    checkpointer = get_checkpointer()
+    custom_graph = build_custom_workflow_graph(
+        agent_sequence=agent_sequence,
+        approval_required=approval_required,
+        checkpointer=checkpointer,
+    )
+
+    # 2. Persist workflow run record in PostgreSQL
+    run_meta = dict(metadata or {})
+    run_meta.update(
+        {
+            "workflow_id": workflow_id,
+            "workflow_name": workflow_name,
+            "agent_sequence": agent_sequence,
+            "approval_required": approval_required,
+            "is_custom_pipeline": True,
+        }
+    )
+
+    active_run_id = None
+    try:
+        async with get_db_context() as session:
+            run_record = await create_workflow_run(
+                session=session,
+                request_id=req_id,
+                user_query=query,
+                metadata=run_meta,
+            )
+            active_run_id = str(run_record.id)
+            await start_workflow_run(session=session, run_id=active_run_id)
+    except Exception as db_err:
+        logger.warning(format_log_msg(f"Could not persist initial custom workflow run: {db_err}", req_id))
+
+    initial_state = create_initial_state(
+        query=query,
+        request_id=req_id,
+        run_id=active_run_id,
+        metadata=run_meta,
+    )
+    initial_state["approval_required"] = approval_required
+
+    thread_config = {"configurable": {"thread_id": str(active_run_id)}}
+    settings = get_settings()
+
+    try:
+        final_state: WorkflowState = await asyncio.wait_for(
+            custom_graph.ainvoke(initial_state, config=thread_config),
+            timeout=settings.WORKFLOW_TIMEOUT_SECONDS,
+        )
+
+        if active_run_id and not final_state.get("run_id"):
+            final_state["run_id"] = active_run_id
+
+        # Synthesize fallback final answer if sequence didn't include responder
+        if not final_state.get("final_answer"):
+            seq_display = " -> ".join(agent_sequence)
+            plan_goal = (final_state.get("plan") or {}).get("goal", "")
+            summary = f"Custom pipeline executed successfully.\nAgent Sequence: {seq_display}\n"
+            if plan_goal:
+                summary += f"Strategic Goal: {plan_goal}\n"
+            if final_state.get("research_results"):
+                res_dict = final_state.get("research_results") or {}
+                summary += f"Research Findings: {str(res_dict.get('findings') or res_dict)[:300]}\n"
+            if final_state.get("analysis_results"):
+                summary += f"Analysis: {str(final_state.get('analysis_results'))[:200]}\n"
+
+            final_state["final_answer"] = {
+                "answer": summary.strip(),
+                "key_points": [
+                    f"Executed {len(agent_sequence)} sequential agent nodes ({seq_display})",
+                    "Orchestrated dynamically via LangGraph StateGraph engine",
+                ],
+                "confidence": 0.95,
+                "sources": [],
+            }
+
+        final_answer = final_state.get("final_answer")
+        errors = final_state.get("errors", [])
+        is_interrupted = "__interrupt__" in final_state and bool(final_state["__interrupt__"])
+
+        if is_interrupted:
+            final_state["status"] = "WAITING_FOR_APPROVAL"
+            final_state["approval_status"] = "PENDING"
+            rev_count = final_state.get("approval_revision", 0)
+
+            if active_run_id:
+                try:
+                    async with get_db_context() as session:
+                        await create_approval_request(
+                            session=session,
+                            run_id=active_run_id,
+                            revision_count=rev_count,
+                            metadata={"query": query, "agent_sequence": agent_sequence},
+                        )
+                        run_row = await session.get(WorkflowRun, _to_uuid(active_run_id))
+                        if run_row:
+                            if final_answer:
+                                run_row.final_answer = final_answer.get("answer")
+                                run_row.key_points = final_answer.get("key_points", [])
+                                run_row.confidence = final_answer.get("confidence")
+                            run_row.plan = final_state.get("plan")
+                            run_row.research_results = final_state.get("research_results")
+                            meta = dict(run_row.metadata_json or {})
+                            meta["agent_sequence"] = agent_sequence
+                            run_row.metadata_json = meta
+                            await session.commit()
+                except Exception as db_err:
+                    logger.warning(format_log_msg(f"Could not persist approval request in DB: {db_err}", req_id))
+
+            return final_state
+
+        if errors:
+            final_state["status"] = "FAILED"
+            if active_run_id:
+                try:
+                    async with get_db_context() as session:
+                        await fail_workflow_run(
+                            session=session,
+                            run_id=active_run_id,
+                            errors=errors,
+                            final_answer=final_answer.get("answer") if final_answer else None,
+                            plan=final_state.get("plan"),
+                            research_results=final_state.get("research_results"),
+                        )
+                except Exception as db_err:
+                    logger.warning(format_log_msg(f"Could not persist failed run: {db_err}", req_id))
+        else:
+            final_state["status"] = "COMPLETED"
+            final_state["approval_status"] = final_state.get("approval_status") or "APPROVED"
+            if active_run_id:
+                try:
+                    async with get_db_context() as session:
+                        await complete_workflow_run(
+                            session=session,
+                            run_id=active_run_id,
+                            final_answer=final_answer.get("answer", "") if final_answer else "",
+                            key_points=final_answer.get("key_points", []) if final_answer else [],
+                            confidence=final_answer.get("confidence", 0.0) if final_answer else 0.0,
+                            plan=final_state.get("plan"),
+                            research_results=final_state.get("research_results"),
+                            errors=errors,
+                            sources=final_answer.get("sources", []) if final_answer else [],
+                            analysis_results=final_state.get("analysis_results"),
+                            validation_results=final_state.get("validation_results"),
+                            approval_status="APPROVED",
+                        )
+                except Exception as db_err:
+                    logger.warning(format_log_msg(f"Could not complete run in DB: {db_err}", req_id))
+
+        return final_state
+
+    except asyncio.TimeoutError:
+        timeout_msg = f"Custom workflow execution timed out after {settings.WORKFLOW_TIMEOUT_SECONDS}s"
+        logger.error(format_log_msg(timeout_msg, req_id, str(active_run_id)))
+        if active_run_id:
+            async with get_db_context() as session:
+                await fail_workflow_run(session=session, run_id=active_run_id, errors=[timeout_msg])
+        raise TimeoutError(timeout_msg)
+
+    except Exception as exc:
+        err_msg = f"Custom workflow execution failed: {str(exc)}"
+        logger.error(format_log_msg(err_msg, req_id), exc_info=True)
+        if active_run_id:
+            async with get_db_context() as session:
+                await fail_workflow_run(session=session, run_id=active_run_id, errors=[err_msg])
         raise
