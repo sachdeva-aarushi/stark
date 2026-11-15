@@ -62,4 +62,8 @@ data/*
 !data/sample/**
 backend/data/*
 
+frontend/.next
+frontend/node_modules
+
+
 

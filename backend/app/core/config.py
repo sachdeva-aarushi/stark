@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # Database Settings (PostgreSQL foundation)
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/workflow_db",
+        default="postgresql+asyncpg://postgres:admin%40123321hehe@db.eliextckdrxvhesflorz.supabase.co:5432/postgres",
         description="PostgreSQL async connection string",
     )
     DB_POOL_SIZE: int = Field(default=5, description="Database connection pool size")
