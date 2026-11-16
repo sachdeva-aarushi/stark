@@ -1,247 +1,331 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { ArrowUpRight, ArrowDown, ShieldCheck, Cpu, Database, Network, GitBranch, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Bot, Database, ShieldCheck, Cpu, Network, CheckCircle2 } from "lucide-react";
+import { FloatingCard } from "./cards/FloatingCard";
 
 export function HeroSection() {
-  // 3D perspective mouse tracking for the interactive orchestration artifact
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const mouseXSpring = useSpring(x, { stiffness: 150, damping: 20 });
-  const mouseYSpring = useSpring(y, { stiffness: 150, damping: 20 });
+  // Global Hero pointer parallax coordinates
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["7deg", "-7deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-7deg", "7deg"]);
+  const springConfig = { damping: 30, stiffness: 200, mass: 0.8 };
+  const smoothX = useSpring(mouseX, springConfig);
+  const smoothY = useSpring(mouseY, springConfig);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-    x.set(xPct);
-    y.set(yPct);
+  // Parallax transformations for spatial depth
+  const rotateX = useTransform(smoothY, [-0.5, 0.5], [8, -8]);
+  const rotateY = useTransform(smoothX, [-0.5, 0.5], [-8, 8]);
+  const translateX = useTransform(smoothX, [-0.5, 0.5], [-16, 16]);
+  const translateY = useTransform(smoothY, [-0.5, 0.5], [-16, 16]);
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!containerRef.current || e.pointerType === "touch") return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(x);
+    mouseY.set(y);
   };
 
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
+  const handlePointerLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
   };
 
   return (
-    <section className="relative min-h-[92vh] pt-32 pb-20 flex flex-col justify-between overflow-hidden bg-white border-b border-border bg-grid-architectural">
-      {/* Subtle architectural vertical rule */}
-      <div className="absolute inset-y-0 left-1/2 w-[1px] bg-border-subtle/70 pointer-events-none hidden xl:block" />
+    <section
+      ref={containerRef}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      className="relative pt-32 pb-24 md:pt-40 md:pb-32 overflow-hidden bg-white border-b border-zinc-200"
+    >
+      {/* Subtle Architectural Grid Lines */}
+      <div className="absolute inset-0 pointer-events-none opacity-40 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:4rem_4rem]" />
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 w-full relative z-10 flex-1 flex flex-col justify-center">
-        {/* System identification pill */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="flex items-center space-x-3 mb-8"
-        >
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-border bg-surface text-zinc-700 text-xs font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-[11px] uppercase tracking-wider font-semibold">STARK ARCHITECTURE v0.1</span>
-          </div>
-          <span className="text-xs font-sans text-zinc-400 hidden sm:inline">—</span>
-          <span className="text-xs font-sans text-zinc-500 uppercase tracking-widest hidden sm:inline">
-            Autonomous Workflows &amp; Human Oversight
-          </span>
-        </motion.div>
-
-        {/* Hero Main Grid */}
+      <div className="relative max-w-7xl mx-auto px-6 md:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          
           {/* Left Column: Monumental Editorial Typography */}
-          <div className="lg:col-span-7 xl:col-span-6 space-y-8">
+          <div className="lg:col-span-6 z-10">
+            {/* Architectural Category Tag */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-4"
+              transition={{ duration: 0.4 }}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200/90 mb-8"
             >
-              <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-zinc-950 leading-[1.04]">
-                Intelligence, <br />
-                <span className="italic font-normal text-blue-700">orchestrated.</span>
-              </h1>
-              <p className="font-serif text-lg sm:text-xl text-zinc-600 leading-relaxed max-w-xl font-normal pt-2">
-                Turn complex business processes into intelligent workflows powered by autonomous AI agents, connected enterprise knowledge, and deterministic human oversight.
-              </p>
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="font-mono text-xs font-medium text-zinc-700 tracking-wider uppercase">
+                Enterprise AI Orchestration Platform
+              </span>
             </motion.div>
 
-            {/* Supporting architectural statement */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
+            {/* Monumental Serif Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="p-4 border-l-2 border-blue-600 bg-surface rounded-r max-w-lg"
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="font-serif text-5xl sm:text-6xl md:text-7xl font-normal text-zinc-950 tracking-tight leading-[1.06] mb-8"
             >
-              <p className="font-sans text-xs text-zinc-700 uppercase tracking-widest font-semibold">
-                From information to execution.
-              </p>
-              <p className="font-serif text-sm text-zinc-600 mt-1">
-                A structured engineering foundation designed for operational clarity, auditability, and multi-agent coordination.
-              </p>
-            </motion.div>
+              Intelligence, <br />
+              <span className="italic font-normal text-zinc-800">orchestrated.</span>
+            </motion.h1>
 
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
+            {/* Subheading / Product Manifesto */}
+            <motion.p
+              initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-wrap items-center gap-4 pt-2"
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="font-sans text-lg sm:text-xl text-zinc-600 font-normal leading-relaxed max-w-xl mb-10"
+            >
+              Move beyond fragile prompt chains and conversational demos. STARK coordinates autonomous agents, enterprise knowledge retrieval, and deterministic tool execution into auditable, production-grade workflows.
+            </motion.p>
+
+            {/* Interactive CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-14"
             >
               <Link
                 href="/dashboard"
-                className="group flex items-center space-x-2.5 px-6 py-3.5 bg-zinc-950 text-white rounded text-sm font-sans tracking-wide uppercase font-semibold hover:bg-zinc-800 transition-all shadow-sm"
+                className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-zinc-950 text-white font-sans text-sm font-medium tracking-tight shadow-lg hover:bg-zinc-800 transition-all duration-200"
               >
-                <span>Explore the Platform</span>
-                <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <span>Open Platform</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
-              <a
-                href="#how-it-works"
-                className="flex items-center space-x-2 px-5 py-3.5 border border-border bg-white text-zinc-800 rounded text-sm font-sans tracking-wide uppercase font-medium hover:bg-surface hover:border-zinc-400 transition-colors"
+
+              <Link
+                href="#orchestration"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-zinc-200/90 bg-white text-zinc-800 font-sans text-sm font-medium hover:bg-zinc-50 hover:border-zinc-300 transition-all duration-200"
               >
-                <span>Discover How It Works</span>
-                <ArrowDown className="w-3.5 h-3.5 text-zinc-500" />
-              </a>
+                Explore Architecture
+              </Link>
+            </motion.div>
+
+            {/* Fine Metric Dividers */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="grid grid-cols-3 gap-6 pt-8 border-t border-zinc-200/80"
+            >
+              <div>
+                <span className="block font-serif text-2xl sm:text-3xl font-medium text-zinc-950 tracking-tight">
+                  100%
+                </span>
+                <span className="font-mono text-xs text-zinc-500 uppercase tracking-wider mt-1 block">
+                  Deterministic Logic
+                </span>
+              </div>
+              <div>
+                <span className="block font-serif text-2xl sm:text-3xl font-medium text-zinc-950 tracking-tight">
+                  Dual-Key
+                </span>
+                <span className="font-mono text-xs text-zinc-500 uppercase tracking-wider mt-1 block">
+                  Human Oversight
+                </span>
+              </div>
+              <div>
+                <span className="block font-serif text-2xl sm:text-3xl font-medium text-zinc-950 tracking-tight">
+                  Open MCP
+                </span>
+                <span className="font-mono text-xs text-zinc-500 uppercase tracking-wider mt-1 block">
+                  Protocol Standard
+                </span>
+              </div>
             </motion.div>
           </div>
 
-          {/* Right Column: Abstract Spatial Orchestration Composition */}
-          <div className="lg:col-span-5 xl:col-span-6 relative flex justify-center items-center">
+          {/* Right Column: 3D Layered Spatial Composition */}
+          <div className="lg:col-span-6 relative h-[520px] md:h-[580px] w-full flex items-center justify-center">
+            
+            {/* Perspective Wrapper with cursor tracking */}
             <motion.div
-              style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md sm:max-w-lg relative py-8 px-4 cursor-pointer select-none"
+              style={{
+                perspective: 1200,
+                rotateX,
+                rotateY,
+                x: translateX,
+                y: translateY,
+                transformStyle: "preserve-3d",
+              }}
+              className="relative w-full max-w-[480px] h-[440px]"
             >
-              {/* Backing Ambient Depth Panel */}
-              <div
-                style={{ transform: "translateZ(-30px)" }}
-                className="absolute inset-4 rounded-xl border border-dashed border-border-strong/70 bg-gradient-to-br from-surface to-surface-muted opacity-80"
-              />
+              {/* Backing Ambient Depth Rings */}
+              <div className="absolute inset-0 rounded-full border border-zinc-200/60 scale-125 pointer-events-none -z-20" />
+              <div className="absolute inset-0 rounded-full border border-dashed border-zinc-200/40 scale-150 pointer-events-none -z-20" />
 
-              {/* Central Primary Orchestration Hub Card */}
-              <div
-                style={{ transform: "translateZ(20px)" }}
-                className="relative bg-white border border-zinc-300 rounded-lg p-6 shadow-[0_20px_50px_rgba(0,0,0,0.06)] space-y-5"
-              >
-                {/* Header with status */}
-                <div className="flex items-center justify-between border-b border-border pb-3.5">
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-7 h-7 rounded bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700">
-                      <Network className="w-4 h-4" />
+              {/* OBJECT 1: Autonomous Agents Card (Center-Left, translateZ: 30px) */}
+              <div className="absolute top-0 left-0 w-72 z-20">
+                <FloatingCard
+                  depth={30}
+                  floatRange={6}
+                  duration={5}
+                  delay={0}
+                  borderClass="border border-zinc-200 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:border-zinc-400"
+                  className="p-5"
+                >
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-100">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4 text-blue-600" />
+                      <span className="font-mono text-[11px] font-semibold tracking-wider uppercase text-zinc-700">
+                        Agent Cluster
+                      </span>
                     </div>
-                    <div>
-                      <div className="font-serif text-sm font-bold text-zinc-950">STARK Orchestration Kernel</div>
-                      <div className="font-mono text-[10px] text-zinc-500">SESSION: #STARK-80492-RUN</div>
+                    <span className="inline-flex items-center gap-1 font-mono text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Active
+                    </span>
+                  </div>
+                  <h4 className="font-serif text-base font-semibold text-zinc-950 mb-1">
+                    Specialized Multi-Agent Swarm
+                  </h4>
+                  <p className="font-sans text-xs text-zinc-500 mb-3">
+                    Coordinated sub-agents executing decomposed tasks in parallel.
+                  </p>
+                  <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-600 bg-zinc-50 p-2 rounded">
+                    <span>Researcher</span>
+                    <span>•</span>
+                    <span>Analyst</span>
+                    <span>•</span>
+                    <span>Auditor</span>
+                  </div>
+                </FloatingCard>
+              </div>
+
+              {/* OBJECT 2: Enterprise Knowledge & Vector Retrieval (Top-Right, translateZ: 15px) */}
+              <div className="absolute -top-4 right-0 w-64 z-10">
+                <FloatingCard
+                  depth={15}
+                  floatRange={5}
+                  duration={6}
+                  delay={0.8}
+                  rotateZ={2}
+                  borderClass="border border-zinc-200/90 shadow-[0_16px_36px_-12px_rgba(0,0,0,0.08)] hover:border-zinc-400"
+                  className="p-5"
+                >
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-100">
+                    <Database className="w-4 h-4 text-zinc-800" />
+                    <span className="font-mono text-[11px] font-semibold tracking-wider uppercase text-zinc-600">
+                      RAG Vector Grounding
+                    </span>
+                  </div>
+                  <h4 className="font-serif text-sm font-semibold text-zinc-900 mb-1">
+                    Enterprise Knowledge Fabric
+                  </h4>
+                  <div className="space-y-1.5 font-mono text-[10px] text-zinc-500">
+                    <div className="flex justify-between py-1 px-2 bg-zinc-50 rounded">
+                      <span>SEC 10-K Chunk</span>
+                      <span className="text-blue-600 font-medium">0.94 Cosine</span>
+                    </div>
+                    <div className="flex justify-between py-1 px-2 bg-zinc-50 rounded">
+                      <span>Internal Policy v4</span>
+                      <span className="text-emerald-600 font-medium">Verified</span>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>ACTIVE</span>
+                </FloatingCard>
+              </div>
+
+              {/* OBJECT 3: Tool Execution & MCP Protocol (Center-Right, translateZ: 45px) */}
+              <div className="absolute top-44 right-2 w-72 z-30">
+                <FloatingCard
+                  depth={45}
+                  floatRange={7}
+                  duration={5.5}
+                  delay={1.5}
+                  rotateZ={-1}
+                  borderClass="border border-zinc-200 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.14)] hover:border-zinc-400"
+                  className="p-5 bg-white"
+                >
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-100">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-blue-600" />
+                      <span className="font-mono text-[11px] font-semibold tracking-wider uppercase text-zinc-700">
+                        Model Context Protocol
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded">
+                      MCP v1.2
+                    </span>
+                  </div>
+                  <h4 className="font-serif text-base font-semibold text-zinc-950 mb-1">
+                    Tool Execution Matrix
+                  </h4>
+                  <p className="font-sans text-xs text-zinc-500 mb-3">
+                    Deterministic sandbox calling GitHub, PostgreSQL & REST APIs.
+                  </p>
+                  <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200">
+                      GitHub API
+                    </span>
+                    <span className="px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded border border-zinc-200">
+                      Postgres
+                    </span>
+                    <span className="px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded border border-zinc-200">
+                      Notion
+                    </span>
+                  </div>
+                </FloatingCard>
+              </div>
+
+              {/* OBJECT 4: Human-in-the-Loop Governance Gate (Bottom-Left, translateZ: 65px) */}
+              <div className="absolute bottom-2 left-4 w-72 z-40">
+                <FloatingCard
+                  depth={65}
+                  floatRange={8}
+                  duration={4.8}
+                  delay={0.4}
+                  borderClass="border border-zinc-950 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.18)]"
+                  bgClass="bg-zinc-950 text-white"
+                  className="p-5"
+                >
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-blue-400" />
+                      <span className="font-mono text-[11px] font-semibold tracking-wider uppercase text-zinc-300">
+                        Governance Checkpoint
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-amber-400 bg-amber-950/80 border border-amber-800/80 px-2 py-0.5 rounded-full">
+                      Approval Required
+                    </span>
+                  </div>
+                  <h4 className="font-serif text-base font-semibold text-white mb-1">
+                    Human Authorization Gate
+                  </h4>
+                  <p className="font-sans text-xs text-zinc-400 mb-3">
+                    Automated workflows halt for dual-signature confirmation on high-consequence mutations.
+                  </p>
+                  <div className="flex items-center justify-between font-mono text-[10px] text-zinc-400 bg-zinc-900 p-2 rounded border border-zinc-800">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
+                      Audited Trail
+                    </span>
+                    <span className="text-zinc-500">Immutable SHA-256</span>
+                  </div>
+                </FloatingCard>
+              </div>
+
+              {/* OBJECT 5: Central Orchestration Nexus (Background node connector) */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border border-zinc-300/60 bg-white/40 backdrop-blur-sm flex items-center justify-center -z-10 shadow-inner">
+                <div className="text-center">
+                  <Network className="w-6 h-6 text-zinc-400 mx-auto mb-1 animate-spin" style={{ animationDuration: "20s" }} />
+                  <span className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest block">
+                    STARK Core
                   </span>
-                </div>
-
-                {/* Coordinated Execution Pipeline Nodes */}
-                <div className="space-y-2.5 font-sans">
-                  {/* Node 1: Autonomous Agent */}
-                  <div className="flex items-center justify-between p-2.5 rounded border border-border bg-surface text-xs">
-                    <div className="flex items-center space-x-2.5">
-                      <Cpu className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="font-medium text-zinc-900">Agent: Financial Analyst</span>
-                    </div>
-                    <span className="font-mono text-[10px] text-zinc-500">DISPATCHED</span>
-                  </div>
-
-                  {/* Node 2: Knowledge Ingestion */}
-                  <div className="flex items-center justify-between p-2.5 rounded border border-border bg-surface text-xs">
-                    <div className="flex items-center space-x-2.5">
-                      <Database className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="font-medium text-zinc-900">Vector Retrieval (RAG)</span>
-                    </div>
-                    <span className="font-mono text-[10px] text-zinc-500">98.4% RELEVANCE</span>
-                  </div>
-
-                  {/* Node 3: External Tool / MCP */}
-                  <div className="flex items-center justify-between p-2.5 rounded border border-border bg-surface text-xs">
-                    <div className="flex items-center space-x-2.5">
-                      <GitBranch className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="font-medium text-zinc-900">MCP Tool Protocol</span>
-                    </div>
-                    <span className="font-mono text-[10px] text-zinc-500">ERP &amp; SQL SYNCED</span>
-                  </div>
-                </div>
-
-                {/* Deterministic Human Oversight Gate */}
-                <div className="p-3 rounded border border-blue-200 bg-blue-50/50 flex items-start space-x-2.5">
-                  <ShieldCheck className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" />
-                  <div className="text-xs">
-                    <div className="font-semibold text-blue-950">Deterministic Human-in-the-Loop</div>
-                    <div className="font-serif text-blue-800 text-[11px] mt-0.5">
-                      Executive review required before mutation commit. Policy boundaries enforced.
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              {/* Floating Spatial Sub-Card 1: Telemetry (Top Right) */}
-              <motion.div
-                style={{ transform: "translateZ(45px)" }}
-                className="absolute -top-3 -right-2 sm:-right-6 bg-zinc-950 text-white rounded-lg p-3.5 border border-zinc-800 shadow-xl w-48 hidden sm:block"
-              >
-                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
-                  <span>STATE VERIFIER</span>
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                </div>
-                <div className="font-serif text-xs font-semibold">Zero Unvalidated Outputs</div>
-                <div className="font-mono text-[10px] text-zinc-500 mt-1">LATENCY: 42ms</div>
-              </motion.div>
-
-              {/* Floating Spatial Sub-Card 2: Multi-Model Sync (Bottom Left) */}
-              <motion.div
-                style={{ transform: "translateZ(55px)" }}
-                className="absolute -bottom-4 -left-2 sm:-left-6 bg-white border border-zinc-300 rounded-lg p-3.5 shadow-xl w-52 hidden sm:block"
-              >
-                <div className="flex items-center space-x-2 text-[10px] font-mono text-blue-700 font-semibold mb-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                  <span>AGENT HANDOFF</span>
-                </div>
-                <div className="font-serif text-xs text-zinc-900 font-medium">Research → Synthesis → Validation</div>
-                <div className="font-mono text-[9px] text-zinc-400 mt-1">STATUS: OBSERVABLE</div>
-              </motion.div>
             </motion.div>
           </div>
-        </div>
 
-        {/* Bottom Architectural Bar */}
-        <div className="pt-16 border-t border-border mt-16 grid grid-cols-2 sm:grid-cols-4 gap-6 text-left">
-          <div>
-            <div className="font-serif text-2xl font-bold text-zinc-950">100%</div>
-            <div className="font-sans text-xs text-zinc-500 uppercase tracking-wider mt-1">Observable Execution</div>
-          </div>
-          <div>
-            <div className="font-serif text-2xl font-bold text-zinc-950">RAG + MCP</div>
-            <div className="font-sans text-xs text-zinc-500 uppercase tracking-wider mt-1">Native Protocol Integration</div>
-          </div>
-          <div>
-            <div className="font-serif text-2xl font-bold text-zinc-950">Deterministic</div>
-            <div className="font-sans text-xs text-zinc-500 uppercase tracking-wider mt-1">Human-in-the-Loop Gates</div>
-          </div>
-          <div>
-            <div className="font-serif text-2xl font-bold text-zinc-950">Persistent</div>
-            <div className="font-sans text-xs text-zinc-500 uppercase tracking-wider mt-1">Stateful Audit Trail</div>
-          </div>
         </div>
       </div>
     </section>

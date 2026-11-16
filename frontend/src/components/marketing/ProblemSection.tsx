@@ -1,132 +1,235 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Layers, FileWarning, Shuffle, Lock, HelpCircle } from "lucide-react";
+import { AlertTriangle, Unplug, ShieldAlert, Cpu, EyeOff, Users, ChevronDown } from "lucide-react";
+import { TiltCard } from "./cards/TiltCard";
 
 interface ProblemItem {
-  number: string;
-  category: string;
+  id: string;
+  num: string;
   title: string;
-  description: string;
-  impact: string;
-  icon: React.ComponentType<{ className?: string }>;
+  tag: string;
+  summary: string;
+  expandedDetail: string;
+  icon: React.ElementType;
+  colSpan: string;
+  isDark?: boolean;
 }
 
-const PROBLEMS: ProblemItem[] = [
+const problems: ProblemItem[] = [
   {
-    number: "01",
-    category: "DATA FRAGMENTATION",
-    title: "Siloed Knowledge & Inaccessible Context",
-    description: "Enterprise data remains locked across disconnected document repositories, legacy databases, and disparate operational SaaS tools. AI cannot act without verified, unified context.",
-    impact: "Result: Repetitive prompt pasting, lost context, and manual data copy-pasting.",
-    icon: Layers,
+    id: "p1",
+    num: "01",
+    tag: "FRAGMENTATION",
+    title: "Siloed, Disconnected AI Experiments",
+    summary:
+      "Enterprise teams deploy isolated chatbots that operate in data silos, unable to communicate across departments or execute end-to-end business workflows.",
+    expandedDetail:
+      "Ad-hoc prototypes create fragmented operational islands. When an AI agent cannot invoke enterprise permissions, access live customer databases, or coordinate with sibling systems, it remains an expensive demo rather than an operational asset.",
+    icon: Unplug,
+    colSpan: "lg:col-span-7",
   },
   {
-    number: "02",
-    category: "SYSTEM ISOLATION",
-    title: "Disconnected, Single-Prompt AI Islands",
-    description: "Point-solution AI tools and standalone chatbots operate in isolation. They generate text on demand but cannot coordinate across multi-step processes or invoke downstream APIs.",
-    impact: "Result: Zero workflow continuity and fragmented technological debt.",
-    icon: Shuffle,
+    id: "p2",
+    num: "02",
+    tag: "INTEGRATION DEBT",
+    title: "The Fragile Custom Glue Layer",
+    summary:
+      "Engineering teams waste months writing bespoke Python scripts and brittle wrappers connecting models to internal databases and APIs.",
+    expandedDetail:
+      "Every upstream schema change or model deprecation shatters bespoke glue code. Without a standardized protocol layer, maintenance costs compound faster than business value.",
+    icon: AlertTriangle,
+    colSpan: "lg:col-span-5",
   },
   {
-    number: "03",
-    category: "COORDINATION OVERHEAD",
-    title: "Manual Glue Between Siloed Teams",
-    description: "Human operators spend hundreds of hours acting as manual coordinators: copying agent outputs, emailing colleagues for approvals, and manually updating disparate backends.",
-    impact: "Result: Sluggish turnaround times and operational vulnerability.",
-    icon: HelpCircle,
+    id: "p3",
+    num: "03",
+    tag: "RETRIEVAL FAILURE",
+    title: "Context Collapse & Blind Retrieval",
+    summary:
+      "Naive RAG implementations dump thousands of irrelevant document chunks into prompt windows, causing hallucinations and lost business context.",
+    expandedDetail:
+      "Simple vector similarity misses structural document hierarchies, temporal relevance, and semantic nuances. Critical decisions are made on out-of-date or misattributed information.",
+    icon: EyeOff,
+    colSpan: "lg:col-span-5",
   },
   {
-    number: "04",
-    category: "ACCURACY RISK",
-    title: "Unvalidated Outputs & Hallucinations",
-    description: "Unconstrained Large Language Models lack schema guardrails, business logic boundaries, and empirical fact verification before writing to core enterprise databases.",
-    impact: "Result: Critical errors, compliance exposure, and stakeholder distrust.",
-    icon: FileWarning,
+    id: "p4",
+    num: "04",
+    tag: "RELIABILITY CRISIS",
+    title: "Hallucinations in Mission-Critical Pipelines",
+    summary:
+      "Enterprise operations cannot tolerate probabilistic guesswork in financial calculations, contract analysis, or database mutations.",
+    expandedDetail:
+      "A 95% model accuracy rate means 1 out of 20 automated transactions fails silently. Mission-critical operations require deterministic validation layers that reject malformed outputs before execution.",
+    icon: ShieldAlert,
+    colSpan: "lg:col-span-7",
+    isDark: true,
   },
   {
-    number: "05",
-    category: "GOVERNANCE VOID",
-    title: "Absence of Deterministic Oversight",
-    description: "Full autonomy is too reckless for regulated domains, while pure manual work is too slow. Traditional automation tools lack dynamic, governed pause-for-approval checkpoints.",
-    impact: "Result: AI projects stall before achieving production enterprise rollout.",
-    icon: Lock,
+    id: "p5",
+    num: "05",
+    tag: "AUDIT VOID",
+    title: "The Governance & Audit Black Box",
+    summary:
+      "Compliance and legal teams cannot verify why an autonomous system took a specific action or trace the data provenance behind an output.",
+    expandedDetail:
+      "Regulatory frameworks require complete accountability. When an AI model takes an action without an immutable audit trail, the enterprise assumes severe operational and legal liability.",
+    icon: Cpu,
+    colSpan: "lg:col-span-6",
   },
   {
-    number: "06",
-    category: "EXECUTION GAP",
-    title: "Insight That Fails to Operationalize",
-    description: "Generating summaries, reports, and conversational advice produces zero organizational value unless it directly mutates records, invokes systems, and completes workflows.",
-    impact: "Result: AI remains a novelty demo rather than an operational utility.",
-    icon: AlertCircle,
+    id: "p6",
+    num: "06",
+    tag: "COORDINATION BOTTLENECK",
+    title: "The Human-in-the-Loop Stalemate",
+    summary:
+      "Workflows either run completely unconstrained without guardrails or freeze perpetually waiting for manual approvals.",
+    expandedDetail:
+      "Effective autonomy requires graduated governance: routine low-risk actions proceed autonomously, while high-consequence thresholds automatically pause for dual-key human authorization.",
+    icon: Users,
+    colSpan: "lg:col-span-6",
   },
 ];
 
 export function ProblemSection() {
+  const [activeCard, setActiveCard] = useState<string | null>(null);
+
+  const toggleCard = (id: string) => {
+    setActiveCard((prev) => (prev === id ? null : id));
+  };
+
   return (
-    <section id="problem" className="py-24 sm:py-32 bg-surface border-b border-border relative">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8">
+    <section className="py-24 md:py-32 bg-zinc-50/70 border-b border-zinc-200">
+      <div className="max-w-7xl mx-auto px-6 md:px-12">
+        
         {/* Section Header */}
-        <div className="max-w-3xl mb-16 sm:mb-20">
-          <div className="flex items-center space-x-2 text-xs font-mono uppercase tracking-widest text-zinc-500 mb-3">
-            <span className="w-2 h-[1px] bg-zinc-400" />
-            <span>SECTION 02 / THE CHALLENGE</span>
+        <div className="max-w-3xl mb-16 md:mb-20">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
+              Section 02 — The Architectural Diagnosis
+            </span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-zinc-950 leading-tight">
-            Intelligence is fragmented. <br />
-            <span className="italic font-normal text-zinc-600">Work shouldn't be.</span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-zinc-950 tracking-tight leading-tight mb-6">
+            Why enterprise AI stalls between prototype and production.
           </h2>
-          <p className="font-serif text-base sm:text-lg text-zinc-600 mt-4 leading-relaxed">
-            Organizations attempt to bridge complex operations with isolated AI chats and fragile scripts. The breakdown happens at the boundaries.
+          <p className="font-sans text-base sm:text-lg text-zinc-600 leading-relaxed">
+            Large language models are remarkable reasoning engines, but standalone prompts cannot run an enterprise. Without architectural orchestration, AI deployments remain fragile, ungrounded, and impossible to audit.
           </p>
         </div>
 
-        {/* Asymmetrical Editorial Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {PROBLEMS.map((problem, idx) => {
+        {/* Asymmetrical 3D Card Composition */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {problems.map((problem, idx) => {
             const Icon = problem.icon;
+            const isExpanded = activeCard === problem.id;
+
             return (
-              <motion.div
-                key={problem.number}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                className="group relative bg-white border border-border rounded-lg p-7 hover:border-zinc-400 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all flex flex-col justify-between"
+              <div
+                key={problem.id}
+                className={`col-span-12 ${problem.colSpan}`}
               >
-                <div>
-                  {/* Card Top Meta */}
-                  <div className="flex items-center justify-between pb-4 border-b border-border-subtle mb-5">
-                    <span className="font-mono text-xs font-semibold text-zinc-400 group-hover:text-blue-600 transition-colors">
-                      {problem.number}
-                    </span>
-                    <span className="font-mono text-[10px] tracking-wider text-zinc-500 uppercase">
-                      {problem.category}
-                    </span>
-                    <Icon className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 transition-colors" />
+                <TiltCard
+                  tiltMaxAngle={7}
+                  bgClass={problem.isDark ? "bg-zinc-950 text-white" : "bg-white text-zinc-950"}
+                  borderClass={
+                    problem.isDark
+                      ? "border border-zinc-800 hover:border-zinc-700"
+                      : "border border-zinc-200 hover:border-zinc-300"
+                  }
+                  className="h-full cursor-pointer"
+                  onClick={() => toggleCard(problem.id)}
+                >
+                  <div className="p-8 md:p-10 flex flex-col justify-between h-full">
+                    
+                    {/* Top Row: Number Marker & Category Tag */}
+                    <div>
+                      <div className="flex items-center justify-between pb-6 mb-6 border-b border-zinc-100/10">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`font-mono text-xs font-bold px-2.5 py-1 rounded ${
+                              problem.isDark
+                                ? "bg-zinc-800 text-blue-400"
+                                : "bg-zinc-100 text-blue-700"
+                            }`}
+                          >
+                            [ {problem.num} ]
+                          </span>
+                          <span
+                            className={`font-mono text-[11px] font-medium tracking-wider uppercase ${
+                              problem.isDark ? "text-zinc-400" : "text-zinc-500"
+                            }`}
+                          >
+                            {problem.tag}
+                          </span>
+                        </div>
+                        <Icon
+                          className={`w-5 h-5 ${
+                            problem.isDark ? "text-blue-400" : "text-zinc-400"
+                          }`}
+                        />
+                      </div>
+
+                      {/* Title */}
+                      <h3
+                        className={`font-serif text-xl sm:text-2xl font-semibold tracking-tight mb-4 ${
+                          problem.isDark ? "text-white" : "text-zinc-950"
+                        }`}
+                      >
+                        {problem.title}
+                      </h3>
+
+                      {/* Primary Diagnostic Summary */}
+                      <p
+                        className={`font-sans text-sm sm:text-base leading-relaxed ${
+                          problem.isDark ? "text-zinc-300" : "text-zinc-600"
+                        }`}
+                      >
+                        {problem.summary}
+                      </p>
+                    </div>
+
+                    {/* Expandable Technical Detail */}
+                    <div className="pt-6 mt-6 border-t border-zinc-100/10">
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span
+                          className={problem.isDark ? "text-zinc-400" : "text-zinc-500"}
+                        >
+                          {isExpanded ? "Collapse Analysis" : "Expand Architectural Impact"}
+                        </span>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-300 ${
+                            isExpanded ? "rotate-180" : ""
+                          } ${problem.isDark ? "text-zinc-400" : "text-zinc-500"}`}
+                        />
+                      </div>
+
+                      {/* Detail Text */}
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className={`mt-4 pt-3 font-sans text-xs sm:text-sm leading-relaxed border-t ${
+                            problem.isDark
+                              ? "border-zinc-800 text-zinc-300 bg-zinc-900/50 p-4 rounded-xl"
+                              : "border-zinc-100 text-zinc-700 bg-zinc-50 p-4 rounded-xl"
+                          }`}
+                        >
+                          {problem.expandedDetail}
+                        </motion.div>
+                      )}
+                    </div>
+
                   </div>
-
-                  {/* Heading & Body */}
-                  <h3 className="font-serif text-lg font-bold text-zinc-950 mb-3 group-hover:text-blue-900 transition-colors leading-snug">
-                    {problem.title}
-                  </h3>
-                  <p className="font-serif text-sm text-zinc-600 leading-relaxed font-normal">
-                    {problem.description}
-                  </p>
-                </div>
-
-                {/* Bottom Impact Tag */}
-                <div className="mt-6 pt-4 border-t border-border-subtle">
-                  <p className="font-sans text-xs text-zinc-500 font-medium">
-                    {problem.impact}
-                  </p>
-                </div>
-              </motion.div>
+                </TiltCard>
+              </div>
             );
           })}
         </div>
+
       </div>
     </section>
   );
