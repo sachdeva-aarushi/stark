@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setStoredUser, useAuth } from "@/lib/auth";
+import { StarkLogo } from "@/components/common/StarkLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,7 +42,10 @@ export default function LoginPage() {
     <div className="min-h-screen w-full bg-white flex flex-col justify-between py-12 px-6 font-serif">
       {/* Top Header */}
       <div className="w-full max-w-5xl mx-auto flex justify-between items-center text-xs tracking-wider uppercase text-zinc-500">
-        <span className="font-semibold text-zinc-900 tracking-widest">STARK</span>
+        <div className="flex items-center gap-2.5">
+          <StarkLogo size={24} className="w-6 h-6" />
+          <span className="font-semibold text-zinc-900 tracking-widest">STARK</span>
+        </div>
         <span>Enterprise AI Orchestration</span>
       </div>
 

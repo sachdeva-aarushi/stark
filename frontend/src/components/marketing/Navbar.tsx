@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Menu, X } from "lucide-react";
+import { StarkLogo } from "@/components/common/StarkLogo";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -35,12 +36,8 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 flex items-center justify-between">
         {/* Brand identity */}
         <Link href="/" className="flex items-center space-x-3 group">
-          <div className="w-8 h-8 rounded border border-zinc-900 flex items-center justify-center bg-zinc-950 text-white font-mono text-xs font-semibold tracking-wider shadow-sm transition-transform group-hover:scale-105">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
+          <div className="relative flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+            <StarkLogo size={36} className="w-9 h-9" />
           </div>
           <div className="flex flex-col">
             <span className="font-serif text-lg font-bold tracking-tight text-zinc-950 leading-none">

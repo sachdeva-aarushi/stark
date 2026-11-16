@@ -4,6 +4,7 @@ import React, { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { StarkLogo } from "@/components/common/StarkLogo";
 
 interface NavItem {
   name: string;
@@ -100,18 +101,21 @@ export function AppShell({ children }: AppShellProps) {
       <aside className="w-64 border-r border-[#E5E7EB] bg-white flex flex-col justify-between select-none">
         <div>
           {/* Platform Identity */}
-          <div className="h-16 px-6 flex flex-col justify-center border-b border-[#E5E7EB]">
-            <div className="flex items-center space-x-2">
-              <span className="font-serif tracking-tight text-xl font-bold text-zinc-950">
-                STARK
-              </span>
-              <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[#E5E7EB] rounded text-zinc-500 uppercase">
-                v0.1
+          <div className="h-16 px-6 flex items-center space-x-3 border-b border-[#E5E7EB]">
+            <StarkLogo size={32} className="w-8 h-8" />
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center space-x-2">
+                <span className="font-serif tracking-tight text-xl font-bold text-zinc-950 leading-none">
+                  STARK
+                </span>
+                <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[#E5E7EB] rounded text-zinc-500 uppercase">
+                  v0.1
+                </span>
+              </div>
+              <span className="font-sans text-[11px] text-zinc-500 tracking-wider uppercase mt-0.5">
+                AI Orchestration
               </span>
             </div>
-            <span className="font-sans text-[11px] text-zinc-500 tracking-wider uppercase mt-0.5">
-              AI Orchestration
-            </span>
           </div>
 
           {/* Navigation Links */}

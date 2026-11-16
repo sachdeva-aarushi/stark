@@ -6,6 +6,7 @@
 
 :root {
   --font-serif: 'Literata', Georgia, Cambria, 'Times New Roman', serif;
+  --font-sans: 'Georgia', 'Literata', Cambria, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -62,6 +63,9 @@ body {
 }
 .perspective-1200 {
   perspective: 1200px;
+}
+.perspective-2000 {
+  perspective: 2000px;
 }
 .preserve-3d {
   transform-style: preserve-3d;
