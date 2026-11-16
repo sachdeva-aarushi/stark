@@ -1,11 +1,146 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
-import { Bot, Database, Workflow, ShieldCheck, UserCheck, Cpu, ArrowUpRight, CheckCircle2, Lock } from "lucide-react";
-import { TiltCard } from "./cards/TiltCard";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bot, Database, Workflow, ShieldCheck, UserCheck, Cpu, ArrowRight, X, CheckCircle2 } from "lucide-react";
+
+interface CapabilityCard {
+  id: string;
+  pillTag: string;
+  num: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  keySpecs: string[];
+  metricLabel: string;
+  metricValue: string;
+  bgGradient: string;
+  borderClass: string;
+  dotColor: string;
+  isDark?: boolean;
+}
+
+const capabilities: CapabilityCard[] = [
+  {
+    id: "cap-1",
+    pillTag: "Agent Orchestration",
+    num: "01",
+    title: "Multi-Agent Swarm",
+    subtitle: "Parallel DAG Coordination",
+    description:
+      "Coordinate specialized autonomous agents (researcher, analyst, auditor) working in parallel with isolated context and automatic error recovery.",
+    keySpecs: [
+      "Dynamic task decomposition",
+      "Per-agent role & token isolation",
+      "Self-healing retry logic",
+    ],
+    metricLabel: "Execution Concurrency",
+    metricValue: "Parallel Multi-Agent",
+    bgGradient: "bg-gradient-to-b from-emerald-50/80 via-emerald-100/30 to-white",
+    borderClass: "border-2 border-emerald-300/80 hover:border-emerald-500",
+    dotColor: "bg-emerald-600",
+  },
+  {
+    id: "cap-2",
+    pillTag: "Semantic Grounding",
+    num: "02",
+    title: "Hybrid Vector RAG",
+    subtitle: "Dense & Sparse Retrieval",
+    description:
+      "Combines vector embeddings with BM25 keyword matching and hierarchical chunking. Cites verifiable enterprise documentation.",
+    keySpecs: [
+      "Multi-hop cross-document reasoning",
+      "Parent-child chunk preservation",
+      "Cryptographic citation hash",
+    ],
+    metricLabel: "Precision Score",
+    metricValue: "0.96 Cosine Match",
+    bgGradient: "bg-gradient-to-b from-amber-50/80 via-amber-100/30 to-white",
+    borderClass: "border-2 border-amber-300/80 hover:border-amber-500",
+    dotColor: "bg-amber-600",
+  },
+  {
+    id: "cap-3",
+    pillTag: "Visual Studio",
+    num: "03",
+    title: "Workflow Studio",
+    subtitle: "Interactive DAG Builder",
+    description:
+      "Design, simulate, and deploy multi-stage workflows as clear Directed Acyclic Graphs with full dependency inspection.",
+    keySpecs: [
+      "Visual graph state inspection",
+      "Conditional branching & joins",
+      "Pre-flight simulation mode",
+    ],
+    metricLabel: "Execution Model",
+    metricValue: "Strict DAG (0 Cycles)",
+    bgGradient: "bg-gradient-to-b from-blue-50/80 via-blue-100/30 to-white",
+    borderClass: "border-2 border-blue-300/80 hover:border-blue-500",
+    dotColor: "bg-blue-600",
+  },
+  {
+    id: "cap-4",
+    pillTag: "Deterministic Engine",
+    num: "04",
+    title: "Sandboxed Compute",
+    subtitle: "Isolated Python & SQL Runtime",
+    description:
+      "Execute exact calculations and data manipulations inside secure containers rather than relying on probabilistic LLM math.",
+    keySpecs: [
+      "Isolated container runtimes",
+      "Strict Pydantic / Zod schema tests",
+      "Zero mathematical drift",
+    ],
+    metricLabel: "Calculation Error",
+    metricValue: "0.00% Drift",
+    bgGradient: "bg-gradient-to-b from-purple-50/80 via-purple-100/30 to-white",
+    borderClass: "border-2 border-purple-300/80 hover:border-purple-500",
+    dotColor: "bg-purple-600",
+  },
+  {
+    id: "cap-5",
+    pillTag: "Human Oversight",
+    num: "05",
+    title: "Dual-Key Governance",
+    subtitle: "Cryptographic Sign-Off Gate",
+    description:
+      "Configurable risk-threshold policies automatically pause mission-critical workflows for dual-signature human authorization.",
+    keySpecs: [
+      "Policy-based threshold triggers",
+      "Dual-signature verification",
+      "Immutable audit ledger",
+    ],
+    metricLabel: "Compliance Audit",
+    metricValue: "SHA-256 Validated",
+    bgGradient: "bg-gradient-to-b from-rose-50/80 via-rose-100/30 to-white",
+    borderClass: "border-2 border-rose-300/80 hover:border-rose-500",
+    dotColor: "bg-rose-600",
+  },
+  {
+    id: "cap-6",
+    pillTag: "Open Infrastructure",
+    num: "06",
+    title: "MCP Tool Ecosystem",
+    subtitle: "Universal Protocol Bridges",
+    description:
+      "Native Anthropic Model Context Protocol connectors linking agents to GitHub, Postgres, Slack, and cloud APIs without lock-in.",
+    keySpecs: [
+      "Standard open MCP protocol",
+      "Sub-50ms bridge execution",
+      "Zero proprietary vendor lock-in",
+    ],
+    metricLabel: "Latency Overhead",
+    metricValue: "< 50ms Bridge Call",
+    bgGradient: "bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 text-white",
+    borderClass: "border-2 border-zinc-700 hover:border-zinc-500",
+    dotColor: "bg-blue-400",
+    isDark: true,
+  },
+];
 
 export function CapabilitiesSection() {
+  const [selectedCap, setSelectedCap] = useState<CapabilityCard | null>(null);
+
   return (
     <section id="capabilities" className="py-24 md:py-32 bg-white border-b border-zinc-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -18,388 +153,186 @@ export function CapabilitiesSection() {
             </span>
           </div>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-zinc-950 tracking-tight leading-tight mb-6">
-            Engineered for enterprise scale, precision, and auditability.
+            Six architectural capabilities built for mission-critical operations.
           </h2>
           <p className="font-sans text-base sm:text-lg text-zinc-600 leading-relaxed">
-            Every capability in STARK is built to eliminate probabilistic failure modes in production. Explore our native orchestration primitives.
+            Every capability in STARK is built to eliminate probabilistic failure modes in production. Explore our native orchestration primitives below.
           </p>
         </div>
 
-        {/* Editorial Bento-Style 3D Composition */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          
-          {/* CARD 1: OVERSIZED FEATURE CARD — Multi-Agent Orchestration (8 cols) */}
-          <div className="lg:col-span-8">
-            <TiltCard
-              tiltMaxAngle={6}
-              borderClass="border border-zinc-200 hover:border-zinc-400"
-              bgClass="bg-white"
-              className="h-full"
-            >
-              <div className="p-8 md:p-12 flex flex-col justify-between h-full">
+        {/* 6 Elegant Motion Cards (3x2 Grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+          {capabilities.map((cap) => {
+            return (
+              <motion.div
+                key={cap.id}
+                whileHover={{ y: -8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className={`rounded-[2.5rem] p-8 flex flex-col justify-between shadow-xl transition-all duration-300 ${cap.bgGradient} ${cap.borderClass}`}
+              >
+                {/* Header: Pill Badge & Number */}
                 <div>
-                  <div className="flex items-center justify-between pb-6 mb-6 border-b border-zinc-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200">
-                        <Bot className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="font-mono text-xs uppercase tracking-wider text-blue-700 font-semibold block">
-                          Capability 01
-                        </span>
-                        <h3 className="font-serif text-2xl font-semibold text-zinc-950">
-                          Multi-Agent Orchestration Swarm
-                        </h3>
-                      </div>
-                    </div>
-                    <span className="font-mono text-xs text-zinc-400 bg-zinc-100 px-2.5 py-1 rounded">
-                      Parallel DAG
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-200/40">
+                    <span
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-mono text-[11px] font-bold uppercase shadow-sm ${
+                        cap.isDark
+                          ? "bg-zinc-800 text-zinc-200 border border-zinc-700"
+                          : "bg-white/90 text-zinc-800 border border-zinc-200/80"
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${cap.dotColor}`} />
+                      {cap.pillTag}
+                    </span>
+                    <span className="font-mono text-xs font-bold text-zinc-400">
+                      {cap.num}
                     </span>
                   </div>
 
-                  <p className="font-sans text-base text-zinc-600 leading-relaxed mb-8 max-w-2xl">
-                    Deploy networks of specialized autonomous agents that coordinate, pass structured artifacts, and self-heal on edge-case failures. Each agent has strict role bounds, dedicated tools, and state retention.
+                  <h3
+                    className={`font-serif text-2xl font-semibold tracking-tight mb-1 ${
+                      cap.isDark ? "text-white" : "text-zinc-950"
+                    }`}
+                  >
+                    {cap.title}
+                  </h3>
+                  <span
+                    className={`font-mono text-xs font-medium block mb-4 ${
+                      cap.isDark ? "text-zinc-400" : "text-zinc-600"
+                    }`}
+                  >
+                    {cap.subtitle}
+                  </span>
+
+                  <p
+                    className={`font-sans text-xs sm:text-sm leading-relaxed mb-6 ${
+                      cap.isDark ? "text-zinc-300" : "text-zinc-700"
+                    }`}
+                  >
+                    {cap.description}
                   </p>
+
+                  {/* Bullet Specs */}
+                  <div className="space-y-1.5 font-sans text-xs mb-6">
+                    {cap.keySpecs.map((spec, sIdx) => (
+                      <div
+                        key={sIdx}
+                        className={`flex items-center gap-2 p-2 rounded-lg ${
+                          cap.isDark ? "bg-zinc-900/60 text-zinc-300" : "bg-white/70 text-zinc-800"
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span>{spec}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Abstract Visual Schematic: Interconnected Agent Nodes */}
-                <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-200/80">
-                  <div className="text-xs font-mono text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
-                    <span>Live Agent Coordination Topology</span>
-                    <span className="text-emerald-600 flex items-center gap-1 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Synchronized
+                {/* Footer: Metric & Action Button */}
+                <div className="pt-4 border-t border-zinc-200/40">
+                  <div className="flex items-center justify-between text-[11px] font-mono mb-3">
+                    <span className={cap.isDark ? "text-zinc-400" : "text-zinc-500"}>
+                      {cap.metricLabel}
+                    </span>
+                    <span
+                      className={`font-bold ${
+                        cap.isDark ? "text-white" : "text-zinc-950"
+                      }`}
+                    >
+                      {cap.metricValue}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Agent Node 1 */}
-                    <div className="p-3 bg-white rounded-xl border border-zinc-200 shadow-sm">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-[10px] text-blue-600 font-semibold">
-                          AGENT 01
-                        </span>
-                        <span className="font-mono text-[10px] text-zinc-400">12ms</span>
-                      </div>
-                      <span className="font-serif text-sm font-semibold text-zinc-900 block">
-                        Research & Retrieval
-                      </span>
-                      <span className="font-mono text-[10px] text-zinc-500">
-                        Vector query & parsing
-                      </span>
-                    </div>
-
-                    {/* Agent Node 2 */}
-                    <div className="p-3 bg-white rounded-xl border border-blue-300 shadow-sm relative">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-[10px] text-blue-700 font-bold">
-                          COORDINATOR
-                        </span>
-                        <span className="font-mono text-[10px] text-blue-600 font-bold">ACTIVE</span>
-                      </div>
-                      <span className="font-serif text-sm font-semibold text-zinc-900 block">
-                        Synthesis Engine
-                      </span>
-                      <span className="font-mono text-[10px] text-zinc-500">
-                        Cross-agent aggregation
-                      </span>
-                    </div>
-
-                    {/* Agent Node 3 */}
-                    <div className="p-3 bg-white rounded-xl border border-zinc-200 shadow-sm">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-[10px] text-zinc-600 font-semibold">
-                          AGENT 03
-                        </span>
-                        <span className="font-mono text-[10px] text-zinc-400">34ms</span>
-                      </div>
-                      <span className="font-serif text-sm font-semibold text-zinc-900 block">
-                        Policy & Audit Gate
-                      </span>
-                      <span className="font-mono text-[10px] text-zinc-500">
-                        Constraint validation
-                      </span>
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => setSelectedCap(cap)}
+                    className={`w-full py-2.5 px-4 rounded-xl font-sans text-xs font-semibold tracking-wider uppercase border shadow-sm flex items-center justify-center gap-1.5 transition-all ${
+                      cap.isDark
+                        ? "bg-white text-zinc-950 hover:bg-zinc-100 border-white"
+                        : "bg-white hover:bg-zinc-50 text-zinc-950 border-zinc-200"
+                    }`}
+                  >
+                    <span>Inspect Capability</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+              </motion.div>
+            );
+          })}
+        </div>
 
-              </div>
-            </TiltCard>
-          </div>
+        {/* Detailed Modal on "Inspect Capability" */}
+        <AnimatePresence>
+          {selectedCap && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                transition={{ duration: 0.25 }}
+                className="relative w-full max-w-xl bg-white rounded-3xl p-8 shadow-2xl border border-zinc-200 overflow-hidden"
+              >
+                <button
+                  onClick={() => setSelectedCap(null)}
+                  className="absolute top-6 right-6 p-2 rounded-full text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
 
-          {/* CARD 2: MEDIUM CARD — Enterprise Knowledge & Semantic RAG (4 cols) */}
-          <div className="lg:col-span-4">
-            <TiltCard
-              tiltMaxAngle={7}
-              borderClass="border border-zinc-200 hover:border-zinc-400"
-              bgClass="bg-zinc-50/80"
-              className="h-full"
-            >
-              <div className="p-8 flex flex-col justify-between h-full">
-                <div>
-                  <div className="flex items-center gap-3 pb-6 mb-6 border-b border-zinc-200">
-                    <div className="w-10 h-10 rounded-xl bg-white text-zinc-800 flex items-center justify-center border border-zinc-200 shadow-sm">
-                      <Database className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="font-mono text-xs uppercase tracking-wider text-zinc-500 font-semibold block">
-                        Capability 02
-                      </span>
-                      <h3 className="font-serif text-xl font-semibold text-zinc-950">
-                        Hybrid Semantic RAG
-                      </h3>
-                    </div>
-                  </div>
-
-                  <p className="font-sans text-sm text-zinc-600 leading-relaxed mb-6">
-                    Multi-hop hybrid retrieval with dense vector similarity, sparse BM25 keyword matching, and hierarchical document chunking.
-                  </p>
-                </div>
-
-                {/* Abstract Visual: Floating Document Layers */}
-                <div className="space-y-2 font-mono text-xs">
-                  <div className="p-3 bg-white rounded-xl border border-zinc-200 shadow-sm flex items-center justify-between">
-                    <span className="text-zinc-800 font-medium">SecOps_Policy_2026.pdf</span>
-                    <span className="text-emerald-600 font-semibold text-[10px] bg-emerald-50 px-2 py-0.5 rounded">
-                      0.96 Score
-                    </span>
-                  </div>
-                  <div className="p-3 bg-white rounded-xl border border-zinc-200 shadow-sm flex items-center justify-between">
-                    <span className="text-zinc-800 font-medium">Customer_DB_Schema.sql</span>
-                    <span className="text-blue-600 font-semibold text-[10px] bg-blue-50 px-2 py-0.5 rounded">
-                      Exact Match
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-            </TiltCard>
-          </div>
-
-          {/* CARD 3: MEDIUM CARD — Workflow Studio & Visual DAG Builder (4 cols) */}
-          <div className="lg:col-span-4">
-            <TiltCard
-              tiltMaxAngle={7}
-              borderClass="border border-zinc-200 hover:border-zinc-400"
-              bgClass="bg-white"
-              className="h-full"
-            >
-              <div className="p-8 flex flex-col justify-between h-full">
-                <div>
-                  <div className="flex items-center gap-3 pb-6 mb-6 border-b border-zinc-100">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-900 flex items-center justify-center border border-zinc-200">
-                      <Workflow className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="font-mono text-xs uppercase tracking-wider text-zinc-500 font-semibold block">
-                        Capability 03
-                      </span>
-                      <h3 className="font-serif text-xl font-semibold text-zinc-950">
-                        Visual Workflow Studio
-                      </h3>
-                    </div>
-                  </div>
-
-                  <p className="font-sans text-sm text-zinc-600 leading-relaxed mb-6">
-                    Design, simulate, and deploy multi-stage workflows as clear Directed Acyclic Graphs. Inspect inputs, outputs, and dependencies at every step.
-                  </p>
-                </div>
-
-                {/* Abstract Visual: Connected DAG Nodes */}
-                <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 font-mono text-[11px] space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-600" />
-                    <span className="text-zinc-800 font-medium">Node: IngestPayload</span>
-                  </div>
-                  <div className="pl-4 text-zinc-400 text-[10px]">↓ conditional branch</div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                    <span className="text-zinc-800 font-medium">Node: ExecuteAudit</span>
-                  </div>
-                </div>
-
-              </div>
-            </TiltCard>
-          </div>
-
-          {/* CARD 4: MEDIUM CARD — Intelligent Deterministic Execution (4 cols) */}
-          <div className="lg:col-span-4">
-            <TiltCard
-              tiltMaxAngle={7}
-              borderClass="border border-zinc-200 hover:border-zinc-400"
-              bgClass="bg-zinc-50/70"
-              className="h-full"
-            >
-              <div className="p-8 flex flex-col justify-between h-full">
-                <div>
-                  <div className="flex items-center gap-3 pb-6 mb-6 border-b border-zinc-200">
-                    <div className="w-10 h-10 rounded-xl bg-white text-zinc-900 flex items-center justify-center border border-zinc-200 shadow-sm">
-                      <ShieldCheck className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="font-mono text-xs uppercase tracking-wider text-zinc-500 font-semibold block">
-                        Capability 04
-                      </span>
-                      <h3 className="font-serif text-xl font-semibold text-zinc-950">
-                        Zero-Drift Validation
-                      </h3>
-                    </div>
-                  </div>
-
-                  <p className="font-sans text-sm text-zinc-600 leading-relaxed mb-6">
-                    Deterministic validation engines verify schema conformance, policy compliance, and mathematical accuracy before committing actions.
-                  </p>
-                </div>
-
-                {/* Visual Checkmark Proof */}
-                <div className="p-4 bg-white rounded-xl border border-zinc-200 font-mono text-xs space-y-1.5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-600">Schema Conformance:</span>
-                    <span className="text-emerald-700 font-semibold">Strict 100%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-600">Context Faithfulness:</span>
-                    <span className="text-emerald-700 font-semibold">Verified</span>
-                  </div>
-                </div>
-
-              </div>
-            </TiltCard>
-          </div>
-
-          {/* CARD 5: MEDIUM CARD — Human-in-the-Loop Governance (4 cols) */}
-          <div className="lg:col-span-4">
-            <TiltCard
-              tiltMaxAngle={7}
-              borderClass="border border-zinc-200 hover:border-zinc-400"
-              bgClass="bg-white"
-              className="h-full"
-            >
-              <div className="p-8 flex flex-col justify-between h-full">
-                <div>
-                  <div className="flex items-center gap-3 pb-6 mb-6 border-b border-zinc-100">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-900 flex items-center justify-center border border-zinc-200">
-                      <UserCheck className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="font-mono text-xs uppercase tracking-wider text-zinc-500 font-semibold block">
-                        Capability 05
-                      </span>
-                      <h3 className="font-serif text-xl font-semibold text-zinc-950">
-                        Dual-Key Governance
-                      </h3>
-                    </div>
-                  </div>
-
-                  <p className="font-sans text-sm text-zinc-600 leading-relaxed mb-6">
-                    Graduated autonomy rules allow safe operations to flow continuously while halting high-risk financial or operational actions for cryptographic human review.
-                  </p>
-                </div>
-
-                {/* Visual Checkpoint Gate */}
-                <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 font-mono text-xs flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-blue-600" />
-                    <span className="text-zinc-800 font-medium">Policy Threshold</span>
-                  </div>
-                  <span className="bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded text-[10px]">
-                    Requires Sign-Off
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded">
+                    CAPABILITY {selectedCap.num}
+                  </span>
+                  <span className="font-mono text-xs text-zinc-500 uppercase">
+                    {selectedCap.pillTag}
                   </span>
                 </div>
 
-              </div>
-            </TiltCard>
-          </div>
+                <h3 className="font-serif text-3xl font-semibold text-zinc-950 mb-1">
+                  {selectedCap.title}
+                </h3>
+                <p className="font-mono text-xs text-zinc-500 mb-6">
+                  {selectedCap.subtitle}
+                </p>
 
-          {/* CARD 6: FULL-WIDTH DARK FEATURE CARD — MCP Ecosystem & Protocol Bridges (12 cols) */}
-          <div className="lg:col-span-12">
-            <TiltCard
-              tiltMaxAngle={4}
-              bgClass="bg-zinc-950 text-white"
-              borderClass="border border-zinc-800 hover:border-zinc-700 shadow-2xl"
-              className="w-full"
-            >
-              <div className="p-8 md:p-12">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                  
-                  {/* Left Column: Description & Metadata */}
-                  <div className="lg:col-span-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-zinc-800 text-blue-400 flex items-center justify-center border border-zinc-700">
-                        <Cpu className="w-5 h-5" />
-                      </div>
-                      <span className="font-mono text-xs uppercase tracking-wider text-blue-400 font-semibold">
-                        Capability 06 — Universal Protocol
-                      </span>
+                <p className="font-sans text-sm text-zinc-700 leading-relaxed mb-6">
+                  {selectedCap.description}
+                </p>
+
+                <div className="space-y-2 mb-8">
+                  <span className="font-mono text-xs text-zinc-400 uppercase tracking-wider block">
+                    Enterprise Engineering Standards:
+                  </span>
+                  {selectedCap.keySpecs.map((spec, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2.5 text-xs font-sans text-zinc-800 bg-zinc-50 p-3 rounded-xl border border-zinc-100"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span>{spec}</span>
                     </div>
-
-                    <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-white tracking-tight mb-4">
-                      Model Context Protocol Ecosystem
-                    </h3>
-                    <p className="font-sans text-base text-zinc-300 leading-relaxed mb-6">
-                      Connect your agents directly to enterprise infrastructure with zero proprietary lock-in. STARK serves as a native MCP host and client, seamlessly orchestrating tools across your cloud, on-premise databases, and third-party SaaS.
-                    </p>
-
-                    <div className="flex items-center gap-6 font-mono text-xs text-zinc-400">
-                      <div>
-                        <span className="text-white font-semibold text-base block">100%</span>
-                        <span>Open Standard</span>
-                      </div>
-                      <div className="w-px h-8 bg-zinc-800" />
-                      <div>
-                        <span className="text-white font-semibold text-base block">Least Privilege</span>
-                        <span>Token Sandboxing</span>
-                      </div>
-                      <div className="w-px h-8 bg-zinc-800" />
-                      <div>
-                        <span className="text-white font-semibold text-base block">&lt;50ms</span>
-                        <span>Bridge Latency</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Interactive Connected Tool Node Grid */}
-                  <div className="lg:col-span-6">
-                    <div className="p-6 bg-zinc-900 rounded-2xl border border-zinc-800 space-y-3">
-                      <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 block mb-3">
-                        Active MCP Tool Bridges
-                      </span>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-xs">
-                        <div className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/80 text-zinc-200 flex flex-col justify-between">
-                          <span className="text-white font-semibold">GitHub REST</span>
-                          <span className="text-emerald-400 text-[10px] mt-2">Connected</span>
-                        </div>
-                        <div className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/80 text-zinc-200 flex flex-col justify-between">
-                          <span className="text-white font-semibold">PostgreSQL</span>
-                          <span className="text-emerald-400 text-[10px] mt-2">Connected</span>
-                        </div>
-                        <div className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/80 text-zinc-200 flex flex-col justify-between">
-                          <span className="text-white font-semibold">Notion Core</span>
-                          <span className="text-emerald-400 text-[10px] mt-2">Connected</span>
-                        </div>
-                        <div className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/80 text-zinc-200 flex flex-col justify-between">
-                          <span className="text-white font-semibold">Salesforce API</span>
-                          <span className="text-zinc-400 text-[10px] mt-2">Standby</span>
-                        </div>
-                        <div className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/80 text-zinc-200 flex flex-col justify-between">
-                          <span className="text-white font-semibold">Slack Bot</span>
-                          <span className="text-emerald-400 text-[10px] mt-2">Connected</span>
-                        </div>
-                        <div className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/80 text-zinc-200 flex flex-col justify-between">
-                          <span className="text-white font-semibold">Custom OpenAPI</span>
-                          <span className="text-emerald-400 text-[10px] mt-2">Connected</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
+                  ))}
                 </div>
-              </div>
-            </TiltCard>
-          </div>
 
-        </div>
+                <div className="pt-6 border-t border-zinc-100 flex items-center justify-between">
+                  <div>
+                    <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider block">
+                      {selectedCap.metricLabel}
+                    </span>
+                    <span className="font-mono text-sm font-bold text-zinc-950">
+                      {selectedCap.metricValue}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCap(null)}
+                    className="px-6 py-2.5 rounded-xl bg-zinc-950 text-white font-sans text-xs font-semibold hover:bg-zinc-800 transition-colors"
+                  >
+                    Close Specification
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
       </div>
     </section>
