@@ -10,15 +10,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         serif: ["Literata", "Georgia", "Cambria", "'Times New Roman'", "serif"],
-        sans: [
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "'Segoe UI'",
-          "Roboto",
-          "'Helvetica Neue'",
-          "Arial",
-          "sans-serif",
-        ],
+        sans: ["Georgia", "Literata", "Cambria", "'Times New Roman'", "serif"],
         mono: [
           "'JetBrains Mono'",
           "ui-monospace",
