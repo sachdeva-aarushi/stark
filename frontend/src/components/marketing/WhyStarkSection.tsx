@@ -1,124 +1,167 @@
 "use client";
 
 import React from "react";
-import { Check, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { XCircle, CheckCircle2, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
+import { TiltCard } from "./cards/TiltCard";
 
-interface ComparisonItem {
+interface ComparisonRow {
   dimension: string;
   conventional: string;
   stark: string;
 }
 
-const COMPARISONS: ComparisonItem[] = [
+const comparisons: ComparisonRow[] = [
   {
     dimension: "Execution Architecture",
-    conventional: "Single prompt pasted into isolated conversational web interfaces.",
-    stark: "Multi-agent coordinated DAG with explicit roles, isolated context, and typed messages.",
+    conventional:
+      "Monolithic single-prompt inference and linear chains that fail if any intermediate step drifts.",
+    stark:
+      "Specialized multi-agent swarms coordinated via Directed Acyclic Graphs with isolated state and automated retries.",
   },
   {
     dimension: "Context Grounding",
-    conventional: "Hallucinates or guesses missing details from broad internet pre-training.",
-    stark: "Strict vector embeddings retrieval (RAG) grounded in private organizational documents.",
+    conventional:
+      "Naive top-k vector similarity dumping raw tokens into context, causing frequent hallucinations.",
+    stark:
+      "Hybrid dense vector and sparse keyword retrieval with hierarchical chunking and cryptographic citation lineage.",
   },
   {
     dimension: "Process Observability",
-    conventional: "Opaque black-box token generation with no intermediate step visibility.",
-    stark: "Real-time state machine streaming agent deliberations, step states, and tool I/O.",
+    conventional:
+      "Opaque black-box text responses with untraceable intermediate reasoning and no step-by-step telemetry.",
+    stark:
+      "Full execution observability: every agent message, tool invocation, and decision is logged with replay capability.",
   },
   {
-    dimension: "Governance & Safety",
-    conventional: "Binary choice between blind full-autonomy or tedious manual copy-pasting.",
-    stark: "Deterministic human-in-the-loop checkpoints with pause, review, and feedback gates.",
+    dimension: "Governance & Human Oversight",
+    conventional:
+      "Binary all-or-nothing execution: either totally unconstrained or requiring constant manual human prompting.",
+    stark:
+      "Graduated risk-based governance: low-risk actions proceed autonomously while critical actions halt for dual-key authorization.",
   },
   {
-    dimension: "Quality Assurance",
-    conventional: "Unvalidated natural language outputs pushed directly to production systems.",
-    stark: "Pydantic & JSON Schema boundary guardrails with automated validation rejection.",
-  },
-  {
-    dimension: "Enterprise Tooling",
-    conventional: "Custom ad-hoc API wrappers that break with every minor schema adjustment.",
-    stark: "Universal Model Context Protocol (MCP) standards for robust ecosystem connectivity.",
-  },
-  {
-    dimension: "Auditability & State",
-    conventional: "Ephemeral browser chat sessions lost upon browser refresh or tab close.",
-    stark: "Persistent database state with immutable historical logs and replay capability.",
+    dimension: "Operational Execution",
+    conventional:
+      "Unvalidated text generation without type safety, capable of hallucinating data structures and math.",
+    stark:
+      "Deterministic sandbox execution with strict Pydantic/Zod schema enforcement and zero-drift mathematical compute.",
   },
 ];
 
 export function WhyStarkSection() {
   return (
-    <section id="why-stark" className="py-24 sm:py-32 bg-surface border-b border-border relative">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8">
+    <section id="comparison" className="py-24 md:py-32 bg-zinc-50/70 border-b border-zinc-200">
+      <div className="max-w-7xl mx-auto px-6 md:px-12">
+        
         {/* Section Header */}
-        <div className="max-w-3xl mb-16">
-          <div className="flex items-center space-x-2 text-xs font-mono uppercase tracking-widest text-zinc-500 mb-3">
-            <span className="w-2 h-[1px] bg-zinc-400" />
-            <span>SECTION 06 / ARCHITECTURAL PRINCIPLES</span>
+        <div className="max-w-3xl mb-16 md:mb-20">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
+              Section 06 — Architectural Contrast
+            </span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-zinc-950 leading-tight">
-            Built for intelligence you can <br />
-            <span className="italic font-normal text-zinc-700">actually operationalize.</span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-zinc-950 tracking-tight leading-tight mb-6">
+            The fundamental shift from conversational demos to deterministic execution.
           </h2>
-          <p className="font-serif text-base sm:text-lg text-zinc-600 mt-4 leading-relaxed">
-            The difference between an experimental AI toy and an enterprise workflow platform lies in deterministic reliability, state persistence, and operational oversight.
+          <p className="font-sans text-base sm:text-lg text-zinc-600 leading-relaxed">
+            Enterprise software cannot rely on probabilistic guesswork. See how STARK contrasts with conventional conversational AI architectures.
           </p>
         </div>
 
-        {/* Editorial Comparison Table */}
-        <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
-          {/* Header row */}
-          <div className="grid grid-cols-1 md:grid-cols-12 border-b border-border bg-surface p-4 sm:p-6 font-mono text-xs uppercase tracking-wider text-zinc-500 font-semibold">
-            <div className="md:col-span-3">DIMENSION</div>
-            <div className="md:col-span-4 hidden md:block text-zinc-500">CONVENTIONAL CHAT AI</div>
-            <div className="md:col-span-5 text-blue-700">STARK ORCHESTRATION</div>
-          </div>
-
-          {/* Row Items */}
-          <div className="divide-y divide-border">
-            {COMPARISONS.map((row, idx) => (
-              <div
-                key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 p-5 sm:p-6 hover:bg-surface/50 transition-colors gap-3 md:gap-4 items-start"
-              >
-                {/* Dimension */}
-                <div className="md:col-span-3">
-                  <span className="font-serif text-sm sm:text-base font-bold text-zinc-950 block">
-                    {row.dimension}
-                  </span>
+        {/* Two Large Contrasting 3D Panels */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          
+          {/* PANEL 1: Conventional Conversational AI (Muted, Diagnostic) */}
+          <TiltCard
+            tiltMaxAngle={5}
+            borderClass="border border-zinc-300/80 hover:border-zinc-400"
+            bgClass="bg-white/80"
+            className="h-full"
+          >
+            <div className="p-8 md:p-10 flex flex-col justify-between h-full">
+              <div>
+                <div className="flex items-center justify-between pb-6 mb-8 border-b border-zinc-200">
+                  <div>
+                    <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-semibold block mb-1">
+                      Paradigm 01
+                    </span>
+                    <h3 className="font-serif text-2xl font-semibold text-zinc-800">
+                      Conventional Conversational AI
+                    </h3>
+                  </div>
+                  <XCircle className="w-6 h-6 text-zinc-400 shrink-0" />
                 </div>
 
-                {/* Conventional */}
-                <div className="md:col-span-4 flex items-start space-x-2.5 text-xs font-serif text-zinc-500">
-                  <X className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">{row.conventional}</span>
-                </div>
-
-                {/* STARK */}
-                <div className="md:col-span-5 flex items-start space-x-2.5 text-xs font-serif text-zinc-900 font-medium bg-blue-50/40 p-3 rounded md:bg-transparent md:p-0">
-                  <Check className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed text-zinc-950 font-semibold">{row.stark}</span>
+                <div className="space-y-6">
+                  {comparisons.map((item, idx) => (
+                    <div key={idx} className="pb-6 border-b border-zinc-100 last:border-none last:pb-0">
+                      <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 block mb-1.5">
+                        {item.dimension}
+                      </span>
+                      <p className="font-sans text-sm text-zinc-600 leading-relaxed">
+                        {item.conventional}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="mt-8 pt-6 border-t border-zinc-200 text-xs font-mono text-zinc-400">
+                Fragile across multi-step enterprise workflows.
+              </div>
+            </div>
+          </TiltCard>
+
+          {/* PANEL 2: STARK Orchestration (Elevated Dark Panel with Cobalt Accents) */}
+          <TiltCard
+            tiltMaxAngle={5}
+            borderClass="border-2 border-zinc-950 shadow-2xl hover:border-blue-700/60"
+            bgClass="bg-zinc-950 text-white"
+            className="h-full"
+          >
+            <div className="p-8 md:p-10 flex flex-col justify-between h-full">
+              <div>
+                <div className="flex items-center justify-between pb-6 mb-8 border-b border-zinc-800">
+                  <div>
+                    <span className="font-mono text-xs uppercase tracking-wider text-blue-400 font-semibold block mb-1">
+                      Paradigm 02 — Production Grade
+                    </span>
+                    <h3 className="font-serif text-2xl font-semibold text-white">
+                      STARK Multi-Agent Orchestration
+                    </h3>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-blue-950 border border-blue-600/60 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-blue-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {comparisons.map((item, idx) => (
+                    <div key={idx} className="pb-6 border-b border-zinc-800/80 last:border-none last:pb-0">
+                      <span className="font-mono text-[11px] uppercase tracking-wider text-blue-400 block mb-1.5 font-semibold">
+                        {item.dimension}
+                      </span>
+                      <p className="font-sans text-sm text-zinc-300 leading-relaxed">
+                        {item.stark}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-zinc-800 flex items-center justify-between text-xs font-mono text-zinc-400">
+                <span className="flex items-center gap-1.5 text-blue-400">
+                  <ShieldCheck className="w-4 h-4" />
+                  Deterministic & Production Verified
+                </span>
+                <span className="text-zinc-500">Zero Hallucination Tolerance</span>
+              </div>
+            </div>
+          </TiltCard>
+
         </div>
 
-        {/* Architectural Quote Box */}
-        <div className="mt-12 p-8 rounded-xl border border-zinc-300 bg-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-1 max-w-2xl">
-            <div className="font-mono text-xs uppercase tracking-wider text-blue-700 font-semibold">
-              ENGINEERING PHILOSOPHY
-            </div>
-            <div className="font-serif text-lg text-zinc-900 italic leading-snug">
-              &quot;Prompting is not programming. Enterprise deployment demands deterministic contracts, observable runtimes, and verifiable ground truth.&quot;
-            </div>
-          </div>
-          <div className="font-mono text-xs text-zinc-500 shrink-0">
-            STARK Core Architecture Team
-          </div>
-        </div>
       </div>
     </section>
   );
