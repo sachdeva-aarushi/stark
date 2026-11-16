@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { StarkLogo } from "@/components/common/StarkLogo";
 
 export function Footer() {
   return (
@@ -13,13 +14,7 @@ export function Footer() {
           {/* Brand & Description */}
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-mono text-xs font-semibold flex items-center justify-center shadow-md shadow-blue-500/20">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5" />
-                  <path d="M2 12l10 5 10-5" />
-                </svg>
-              </div>
+              <StarkLogo variant="dark" size={38} className="w-10 h-10" />
               <span className="font-serif text-2xl font-bold tracking-tight text-white">
                 STARK
               </span>

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { StarkLogo } from "@/components/common/StarkLogo";
 import {
   ArrowRight,
   ShieldCheck,
@@ -36,14 +37,15 @@ export function HeroSection() {
       {/* Main Full-Screen Hero Content */}
       <div className="relative w-full max-w-6xl mx-auto px-6 md:px-12 my-auto flex flex-col items-center text-center z-10">
         
-        {/* Top Enterprise Pill Tag */}
+        {/* Top Enterprise Pill Tag with STARK Logo */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-xs mb-8"
+          className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-xs mb-8 hover:border-blue-300 transition-colors"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+          <StarkLogo size={22} className="w-5 h-5" />
+          <span className="w-px h-3.5 bg-slate-200" />
           <span className="font-mono text-xs font-semibold text-slate-800 tracking-wider uppercase">
             Deterministic Enterprise AI Orchestration
           </span>
