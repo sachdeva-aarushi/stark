@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -9,10 +9,14 @@
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-serif);
   background-color: #FFFFFF;
-  color: #111827;
+  color: #0A0F1D;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,6 +39,19 @@ body {
 
 /* Restrained selection styling */
 ::selection {
-  background: #111827;
+  background: #0A0F1D;
   color: #FFFFFF;
+}
+
+/* Architectural fine-grid pattern */
+.bg-grid-architectural {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(229, 231, 235, 0.45) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(229, 231, 235, 0.45) 1px, transparent 1px);
+}
+
+.bg-dot-pattern {
+  background-size: 24px 24px;
+  background-image: radial-gradient(rgba(100, 116, 139, 0.2) 1px, transparent 1px);
 }
