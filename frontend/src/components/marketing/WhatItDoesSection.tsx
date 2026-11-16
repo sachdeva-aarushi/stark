@@ -113,7 +113,7 @@ export function WhatItDoesSection() {
   const [selectedCard, setSelectedCard] = useState<WaveCard | null>(null);
 
   return (
-    <section id="orchestration" className="py-16 md:py-20 bg-slate-50/70 border-b border-slate-200 overflow-hidden">
+    <section id="orchestration" className="py-12 md:py-14 bg-slate-50/70 border-b border-slate-200 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Compact Section Header (Ensuring single-screen framing) */}

@@ -79,11 +79,11 @@ export function HowItWorksSection() {
   const [activeStage, setActiveStage] = useState<number | null>(null);
 
   return (
-    <section id="workflow" className="py-16 md:py-20 bg-white border-b border-slate-200">
+    <section id="workflow" className="py-12 md:py-14 bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-10">
+        <div className="max-w-3xl mb-7">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
               Section 04 — Execution Pipeline
@@ -110,7 +110,7 @@ export function HowItWorksSection() {
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
                 onMouseEnter={() => setActiveStage(idx)}
                 onMouseLeave={() => setActiveStage(null)}
-                className={`bg-slate-50 border-2 ${stage.accentColor} rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-all duration-200 min-h-[260px]`}
+                className={`bg-slate-50 border-2 ${stage.accentColor} rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-all duration-200 min-h-[235px]`}
               >
                 <div>
                   {/* Top Step & Category Pill */}

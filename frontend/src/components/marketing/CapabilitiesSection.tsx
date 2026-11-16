@@ -120,11 +120,11 @@ export function CapabilitiesSection() {
   const [selectedCap, setSelectedCap] = useState<CapabilityCard | null>(null);
 
   return (
-    <section id="capabilities" className="py-16 md:py-20 bg-white border-b border-slate-200">
+    <section id="capabilities" className="py-12 md:py-14 bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-10">
+        <div className="max-w-3xl mb-7">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
               Section 05 — Core Capabilities
@@ -148,7 +148,7 @@ export function CapabilitiesSection() {
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
                 onClick={() => setSelectedCap(cap)}
-                className={`rounded-2xl p-6 flex flex-col justify-between shadow-xs border-2 ${cap.borderColor} ${cap.bgColor} cursor-pointer transition-all duration-200 min-h-[250px]`}
+                className={`rounded-2xl p-5 flex flex-col justify-between shadow-xs border-2 ${cap.borderColor} ${cap.bgColor} cursor-pointer transition-all duration-200 min-h-[215px]`}
               >
                 <div>
                   {/* Top Header */}

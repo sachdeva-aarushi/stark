@@ -119,11 +119,11 @@ export function WhyStarkSection() {
   };
 
   return (
-    <section id="comparison" className="py-16 md:py-20 bg-slate-50/70 border-b border-slate-200">
+    <section id="comparison" className="py-12 md:py-14 bg-slate-50/70 border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-10">
+        <div className="max-w-3xl mb-7">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
               Section 06 — Architectural Contrast
@@ -148,7 +148,7 @@ export function WhyStarkSection() {
                 key={card.id}
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                className={`rounded-2xl p-6 flex flex-col justify-between shadow-xs border-2 ${card.borderColor} ${card.bgColor} transition-all duration-200`}
+                className={`rounded-2xl p-5 flex flex-col justify-between shadow-xs border-2 ${card.borderColor} ${card.bgColor} transition-all duration-200`}
               >
                 <div>
                   {/* Category Pill & Number */}

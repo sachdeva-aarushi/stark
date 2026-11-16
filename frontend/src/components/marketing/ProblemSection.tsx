@@ -101,11 +101,11 @@ export function ProblemSection() {
   };
 
   return (
-    <section className="py-16 md:py-20 bg-slate-50/70 border-b border-slate-200">
+    <section className="py-12 md:py-14 bg-slate-50/70 border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-10">
+        <div className="max-w-3xl mb-7">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
               Section 02 — The Architectural Diagnosis
@@ -129,7 +129,7 @@ export function ProblemSection() {
                 key={card.id}
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                className={`relative rounded-2xl p-6 flex flex-col justify-between shadow-xs border-2 ${card.bgClass} ${card.borderClass} transition-all duration-200 min-h-[280px]`}
+                className={`relative rounded-2xl p-5 flex flex-col justify-between shadow-xs border-2 ${card.bgClass} ${card.borderClass} transition-all duration-200 min-h-[225px]`}
               >
                 <div>
                   {/* Top Row: Pill Badge and Number */}
@@ -152,7 +152,7 @@ export function ProblemSection() {
                   </span>
 
                   {/* Summary */}
-                  <p className="font-sans text-xs text-slate-600 leading-relaxed mb-3">
+                  <p className="font-sans text-[11px] text-slate-600 leading-relaxed mb-2">
                     {card.summary}
                   </p>
 

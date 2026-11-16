@@ -27,12 +27,12 @@ export function ClosingSection() {
           <span className="italic font-serif text-blue-700">Put it to work.</span>
         </h2>
 
-        <p className="font-sans text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed mb-10">
+        <p className="font-sans text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed mb-7">
           Replace conversational fragility with deterministic multi-agent orchestration. Connect enterprise knowledge, execute verifiable workflows, and enforce auditable governance.
         </p>
 
         {/* Primary CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-7">
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full bg-blue-600 text-white font-sans text-sm font-semibold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all duration-200"
