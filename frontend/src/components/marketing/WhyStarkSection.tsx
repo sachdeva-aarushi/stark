@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { XCircle, CheckCircle2, ShieldCheck, ArrowRight, RefreshCw } from "lucide-react";
+import { XCircle, CheckCircle2, ShieldCheck, RefreshCw } from "lucide-react";
 
 interface ComparisonCard {
   id: string;
@@ -18,9 +18,10 @@ interface ComparisonCard {
     description: string;
     guarantee: string;
   };
-  bgGradient: string;
-  borderClass: string;
+  bgColor: string;
+  borderColor: string;
   dotColor: string;
+  pillColor: string;
 }
 
 const comparisonCards: ComparisonCard[] = [
@@ -31,16 +32,17 @@ const comparisonCards: ComparisonCard[] = [
     title: "Linear Prompt vs. Multi-Agent DAG",
     conventional: {
       headline: "Fragile Single-Prompt Inference",
-      description: "Attempts complex multi-step reasoning in a single prompt. If any intermediate step drifts, the entire workflow fails silently.",
+      description: "Attempts complex reasoning in a single prompt. If any intermediate step drifts, the entire workflow fails silently.",
     },
     stark: {
       headline: "Parallel Multi-Agent DAG",
-      description: "Decomposes requests into Directed Acyclic Graphs with isolated state, concurrent execution, and automatic self-healing retries.",
+      description: "Decomposes requests into Directed Acyclic Graphs with isolated state and automatic self-healing retries.",
       guarantee: "100% Deterministic Execution Graph",
     },
-    bgGradient: "bg-gradient-to-b from-slate-50 via-white to-white",
-    borderClass: "border-2 border-slate-300 hover:border-slate-500",
-    dotColor: "bg-slate-700",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200 hover:border-blue-400",
+    dotColor: "bg-blue-600",
+    pillColor: "bg-blue-100 text-blue-800",
   },
   {
     id: "comp-2",
@@ -56,9 +58,10 @@ const comparisonCards: ComparisonCard[] = [
       description: "Preserves parent-child chunk lineage with cryptographic citation hashes for every generated claim.",
       guarantee: "Verifiable Citation Lineage",
     },
-    bgGradient: "bg-gradient-to-b from-amber-50/80 via-white to-white",
-    borderClass: "border-2 border-amber-300 hover:border-amber-500",
-    dotColor: "bg-amber-600",
+    bgColor: "bg-emerald-50",
+    borderColor: "border-emerald-200 hover:border-emerald-400",
+    dotColor: "bg-emerald-600",
+    pillColor: "bg-emerald-100 text-emerald-800",
   },
   {
     id: "comp-3",
@@ -74,9 +77,10 @@ const comparisonCards: ComparisonCard[] = [
       description: "Unified open-standard MCP tool bridges with token sandboxing, zero vendor lock-in, and sub-50ms latency.",
       guarantee: "Anthropic Open MCP Standard",
     },
-    bgGradient: "bg-gradient-to-b from-blue-50/80 via-white to-white",
-    borderClass: "border-2 border-blue-300 hover:border-blue-500",
-    dotColor: "bg-blue-600",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200 hover:border-amber-400",
+    dotColor: "bg-amber-600",
+    pillColor: "bg-amber-100 text-amber-800",
   },
   {
     id: "comp-4",
@@ -92,9 +96,10 @@ const comparisonCards: ComparisonCard[] = [
       description: "Low-risk routines commit automatically, while high-stakes financial and schema actions halt for cryptographic sign-off.",
       guarantee: "Immutable SHA-256 Audit Trail",
     },
-    bgGradient: "bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 text-white",
-    borderClass: "border-2 border-zinc-700 hover:border-zinc-500",
-    dotColor: "bg-blue-400",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-200 hover:border-purple-400",
+    dotColor: "bg-purple-600",
+    pillColor: "bg-purple-100 text-purple-800",
   },
 ];
 
@@ -114,97 +119,76 @@ export function WhyStarkSection() {
   };
 
   return (
-    <section id="comparison" className="py-24 md:py-32 bg-zinc-50/60 border-b border-zinc-200">
+    <section id="comparison" className="py-12 md:py-14 bg-slate-50/70 border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-16 md:mb-20">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="max-w-3xl mb-7">
+          <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
               Section 06 — Architectural Contrast
             </span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-zinc-950 tracking-tight leading-tight mb-6">
-            Four fundamental shifts from conversational demos to production reality.
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-normal text-slate-900 tracking-tight leading-snug mb-2">
+            Four shifts from conversational demos to production reality.
           </h2>
-          <p className="font-sans text-base sm:text-lg text-zinc-600 leading-relaxed">
-            Compare conventional single-prompt architectures against STARK deterministic multi-agent orchestration.
+          <p className="font-sans text-sm sm:text-base text-slate-600 leading-relaxed">
+            Compare conventional single-prompt limitations against STARK deterministic guarantees.
           </p>
         </div>
 
-        {/* 4 Contrast Cards (2x2 Grid) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+        {/* 4 Contrast Cards (2x2 Grid fitting comfortably in one screen frame) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {comparisonCards.map((card) => {
-            const isDark = card.id === "comp-4";
             const currentView = activeViews[card.id] || "stark";
             const isStark = currentView === "stark";
 
             return (
               <motion.div
                 key={card.id}
-                whileHover={{ y: -6 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                className={`rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-between shadow-xl transition-all duration-300 ${card.bgGradient} ${card.borderClass}`}
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                className={`rounded-2xl p-5 flex flex-col justify-between shadow-xs border-2 ${card.borderColor} ${card.bgColor} transition-all duration-200`}
               >
-                {/* Header: Category Pill & Number */}
                 <div>
-                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-200/40">
-                    <span
-                      className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full font-mono text-xs font-semibold uppercase tracking-wider shadow-sm ${
-                        isDark
-                          ? "bg-zinc-800 text-zinc-200 border border-zinc-700"
-                          : "bg-white text-zinc-800 border border-zinc-200"
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${card.dotColor}`} />
+                  {/* Category Pill & Number */}
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/60">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-semibold uppercase ${card.pillColor}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${card.dotColor}`} />
                       {card.category}
                     </span>
-                    <span className="font-mono text-xs font-bold text-zinc-400">
+                    <span className="font-mono text-xs font-bold text-slate-400">
                       [ {card.num} ]
                     </span>
                   </div>
 
-                  <h3
-                    className={`font-serif text-2xl font-semibold tracking-tight mb-4 ${
-                      isDark ? "text-white" : "text-zinc-950"
-                    }`}
-                  >
+                  <h3 className="font-serif text-lg font-semibold text-slate-900 tracking-tight mb-3">
                     {card.title}
                   </h3>
 
                   {/* Active Comparison Body */}
-                  <div
-                    className={`p-5 rounded-2xl mb-6 border transition-colors ${
-                      isStark
-                        ? isDark
-                          ? "bg-zinc-900 border-zinc-800 text-zinc-200"
-                          : "bg-white border-zinc-200/80 text-zinc-800 shadow-sm"
-                        : isDark
-                        ? "bg-zinc-900/60 border-zinc-800 text-zinc-400"
-                        : "bg-zinc-100 border-zinc-200 text-zinc-600"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-blue-600">
+                  <div className="p-4 rounded-xl mb-4 bg-white border border-slate-200/80 shadow-xs">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-blue-600">
                         {isStark ? "● STARK Orchestration" : "○ Conventional Conversational AI"}
                       </span>
                       {isStark ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       ) : (
-                        <XCircle className="w-4 h-4 text-zinc-400" />
+                        <XCircle className="w-3.5 h-3.5 text-slate-400" />
                       )}
                     </div>
 
-                    <h4 className="font-serif text-lg font-semibold mb-2">
+                    <h4 className="font-serif text-sm font-semibold text-slate-900 mb-1">
                       {isStark ? card.stark.headline : card.conventional.headline}
                     </h4>
 
-                    <p className="font-sans text-xs sm:text-sm leading-relaxed">
+                    <p className="font-sans text-xs text-slate-600 leading-relaxed">
                       {isStark ? card.stark.description : card.conventional.description}
                     </p>
 
                     {isStark && (
-                      <div className="mt-3 pt-3 border-t border-zinc-200/40 flex items-center gap-1.5 font-mono text-[11px] text-emerald-600 font-semibold">
+                      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-1.5 font-mono text-[10px] text-emerald-700 font-semibold">
                         <ShieldCheck className="w-3.5 h-3.5" />
                         <span>{card.stark.guarantee}</span>
                       </div>
@@ -212,17 +196,13 @@ export function WhyStarkSection() {
                   </div>
                 </div>
 
-                {/* Bottom Toggle Pill Button */}
-                <div className="pt-4 border-t border-zinc-200/40">
+                {/* Bottom Toggle Button */}
+                <div className="pt-2">
                   <button
                     onClick={() => toggleView(card.id)}
-                    className={`w-full py-3 px-5 rounded-2xl font-sans text-xs font-semibold tracking-wider uppercase border shadow-sm flex items-center justify-center gap-2 transition-all ${
-                      isDark
-                        ? "bg-white text-zinc-950 hover:bg-zinc-100 border-white"
-                        : "bg-zinc-950 text-white hover:bg-zinc-800 border-zinc-950"
-                    }`}
+                    className="w-full py-2 px-4 rounded-xl font-sans text-xs font-semibold tracking-wider uppercase border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-xs flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className="w-3 h-3 text-slate-500" />
                     <span>
                       {isStark ? "View Conventional Limitation" : "Switch to STARK Guarantee"}
                     </span>

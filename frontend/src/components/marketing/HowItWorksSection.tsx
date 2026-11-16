@@ -1,123 +1,162 @@
 "use client";
 
-import React from "react";
-import { HorizontalStageCards, StageFlowItem } from "./cards/HorizontalStageCards";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  FileText,
+  GitFork,
+  Cpu,
+  CheckCircle2,
+  Lock,
+  ArrowRight,
+} from "lucide-react";
 
-const stagesData: StageFlowItem[] = [
+interface WorkflowStage {
+  step: string;
+  title: string;
+  category: string;
+  description: string;
+  artifact: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accentColor: string;
+  pillColor: string;
+}
+
+const stages: WorkflowStage[] = [
   {
-    id: "stage-1",
     step: "01",
     title: "Understand & Ground",
-    subtitle: "Intent Parsing & Enterprise Retrieval",
-    description:
-      "Parses natural request intent and executes hybrid vector and BM25 sparse keyword queries across enterprise documentation.",
-    bulletFlow: [
-      "Natural language request parsed into structured domain constraints.",
-      "Multi-hop semantic search extracts relevant policies and schemas.",
-      "Context lineage sealed into an immutable execution snapshot.",
-    ],
+    category: "Context Layer",
+    description: "Extracts multi-tenant enterprise documentation, computes semantic embeddings, and creates a verified context manifest.",
     artifact: "GroundingManifest.json",
-    gate: "Relevance Score > 0.88",
-    bgGradient: "bg-gradient-to-b from-emerald-50/80 via-emerald-100/30 to-white",
-    borderClass: "border-2 border-emerald-300/80 hover:border-emerald-500",
-    dotColor: "bg-emerald-600",
+    icon: FileText,
+    accentColor: "border-blue-300 hover:border-blue-500",
+    pillColor: "bg-blue-50 text-blue-700 border-blue-200",
   },
   {
-    id: "stage-2",
     step: "02",
     title: "Plan & Decompose",
-    subtitle: "Deterministic DAG Graph Generation",
-    description:
-      "Generates a Directed Acyclic Graph breaking the request into discrete sub-tasks with clear dependency ordering and error pathways.",
-    bulletFlow: [
-      "Decomposes objective into concurrent and sequential agent nodes.",
-      "Assigns required tool permissions and rate limits per node.",
-      "Pre-execution simulation against policy guardrails.",
-    ],
+    category: "DAG Generation",
+    description: "Deconstructs the target objective into a Directed Acyclic Graph of isolated, concurrent sub-tasks with strict schemas.",
     artifact: "ExecutionPlan.dag",
-    gate: "Zero Graph Cycles (Strict DAG)",
-    bgGradient: "bg-gradient-to-b from-amber-50/80 via-amber-100/30 to-white",
-    borderClass: "border-2 border-amber-300/80 hover:border-amber-500",
-    dotColor: "bg-amber-600",
+    icon: GitFork,
+    accentColor: "border-indigo-300 hover:border-indigo-500",
+    pillColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
   },
   {
-    id: "stage-3",
     step: "03",
     title: "Execute via Swarm",
-    subtitle: "Specialized Agents & MCP Tool Calls",
-    description:
-      "Specialized autonomous agents execute their assigned DAG nodes in parallel, invoking external tools through Model Context Protocol.",
-    bulletFlow: [
-      "Parallel workers invoke external tools with least-privilege tokens.",
-      "Isolated sandboxes execute deterministic Python and SQL.",
-      "Exponential backoff with automated state preservation.",
-    ],
-    artifact: "ExecutionTrace.ndjson",
-    gate: "Sandbox Isolation Certified",
-    bgGradient: "bg-gradient-to-b from-blue-50/80 via-blue-100/30 to-white",
-    borderClass: "border-2 border-blue-300/80 hover:border-blue-500",
-    dotColor: "bg-blue-600",
+    category: "Multi-Agent Runtime",
+    description: "Dispatches domain-specific agents over the open MCP bus with sandboxed Python and SQL execution runtimes.",
+    artifact: "SwarmTelemetry.log",
+    icon: Cpu,
+    accentColor: "border-emerald-300 hover:border-emerald-500",
+    pillColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
   {
-    id: "stage-4",
     step: "04",
     title: "Validate & Verify",
-    subtitle: "Deterministic Constraint Checking",
-    description:
-      "Every generated artifact and database mutation passes through strict schema validation and factual consistency checks.",
-    bulletFlow: [
-      "Zero-hallucination guardrail verifies facts match source citations.",
-      "Strict Pydantic / Zod schema enforcement across outputs.",
-      "Failed outputs routed to targeted correction loops.",
-    ],
-    artifact: "ValidationProof.pem",
-    gate: "Zero-Drift Certified",
-    bgGradient: "bg-gradient-to-b from-purple-50/80 via-purple-100/30 to-white",
-    borderClass: "border-2 border-purple-300/80 hover:border-purple-500",
-    dotColor: "bg-purple-600",
+    category: "Guardrail Gate",
+    description: "Validates numerical outputs against mathematical schemas and checks semantic citations against parent source documents.",
+    artifact: "VerificationCertificate.p7s",
+    icon: CheckCircle2,
+    accentColor: "border-amber-300 hover:border-amber-500",
+    pillColor: "bg-amber-50 text-amber-700 border-amber-200",
   },
   {
-    id: "stage-5",
     step: "05",
     title: "Approve & Deliver",
-    subtitle: "Dual-Key Governance & Transaction Commit",
-    description:
-      "Low-risk workflows commit automatically; high-consequence thresholds pause for cryptographic dual-key human authorization.",
-    bulletFlow: [
-      "Role-based notification delivered to authorized personnel.",
-      "Cryptographic dual-key approval unlocks final execution step.",
-      "Complete end-to-end trace logged to immutable audit ledger.",
-    ],
-    artifact: "AuditLedgerRecord.cbor",
-    gate: "Dual-Signature Certified",
-    bgGradient: "bg-gradient-to-b from-zinc-100 via-zinc-50 to-white",
-    borderClass: "border-2 border-zinc-300 hover:border-zinc-500",
-    dotColor: "bg-zinc-800",
+    category: "Governance Layer",
+    description: "Evaluates policy thresholds and either commits the result automatically or halts for cryptographic dual-key authorization.",
+    artifact: "AuditRecord.sig",
+    icon: Lock,
+    accentColor: "border-rose-300 hover:border-rose-500",
+    pillColor: "bg-rose-50 text-rose-700 border-rose-200",
   },
 ];
 
 export function HowItWorksSection() {
+  const [activeStage, setActiveStage] = useState<number | null>(null);
+
   return (
-    <section id="workflow" className="py-24 md:py-32 bg-zinc-50/60 border-b border-zinc-200">
+    <section id="workflow" className="py-12 md:py-14 bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-16 md:mb-20">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="max-w-3xl mb-7">
+          <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs font-semibold text-blue-700 tracking-wider uppercase">
-              Section 04 — The Execution Lifecycle
+              Section 04 — Execution Pipeline
             </span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-zinc-950 tracking-tight leading-tight mb-6">
-            From natural intent to audited enterprise delivery.
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-normal text-slate-900 tracking-tight leading-snug mb-2">
+            Five deterministic stages from request to verified delivery.
           </h2>
-          <p className="font-sans text-base sm:text-lg text-zinc-600 leading-relaxed">
-            Five sequential stages ensure every output is grounded, planned, executed, verified, and governed before touching production systems.
+          <p className="font-sans text-sm sm:text-base text-slate-600 leading-relaxed">
+            Every task traverses a verifiable pipeline with strict validation boundaries and immutable state logging.
           </p>
         </div>
 
-        {/* 5-Card Horizontal Motion Flow Track */}
-        <HorizontalStageCards stages={stagesData} />
+        {/* 5 Opaque Stage Cards (Fitting in one screen frame, no clunky tabs or pagination) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
+          {stages.map((stage, idx) => {
+            const Icon = stage.icon;
+            const isHovered = activeStage === idx;
+
+            return (
+              <motion.div
+                key={stage.step}
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                onMouseEnter={() => setActiveStage(idx)}
+                onMouseLeave={() => setActiveStage(null)}
+                className={`bg-slate-50 border-2 ${stage.accentColor} rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-all duration-200 min-h-[235px]`}
+              >
+                <div>
+                  {/* Top Step & Category Pill */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-mono text-xs font-bold text-slate-400">
+                      STAGE {stage.step}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] font-semibold border ${stage.pillColor}`}>
+                      {stage.category}
+                    </span>
+                  </div>
+
+                  {/* Icon & Title */}
+                  <div className="flex items-center gap-2.5 mb-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800 shadow-xs">
+                      <Icon className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <h3 className="font-serif text-base font-semibold text-slate-900 leading-tight">
+                      {stage.title}
+                    </h3>
+                  </div>
+
+                  {/* Description */}
+                  <p className="font-sans text-xs text-slate-600 leading-relaxed">
+                    {stage.description}
+                  </p>
+                </div>
+
+                {/* Bottom Artifact Tag */}
+                <div className="pt-3 mt-3 border-t border-slate-200/70 flex items-center justify-between font-mono text-[10px]">
+                  <span className="text-slate-400">Artifact</span>
+                  <span className="text-slate-700 font-semibold truncate max-w-[120px]">
+                    {stage.artifact}
+                  </span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Progress Flow Indicator Line */}
+        <div className="hidden lg:flex items-center justify-between mt-6 px-4">
+          <div className="flex-1 h-0.5 bg-slate-200 relative">
+            <div className="absolute inset-y-0 left-0 bg-blue-600 w-full" />
+          </div>
+        </div>
 
       </div>
     </section>
