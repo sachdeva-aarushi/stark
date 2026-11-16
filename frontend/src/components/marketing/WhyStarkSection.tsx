@@ -1,57 +1,120 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { XCircle, CheckCircle2, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
-import { TiltCard } from "./cards/TiltCard";
+import { XCircle, CheckCircle2, ShieldCheck, ArrowRight, RefreshCw } from "lucide-react";
 
-interface ComparisonRow {
-  dimension: string;
-  conventional: string;
-  stark: string;
+interface ComparisonCard {
+  id: string;
+  num: string;
+  category: string;
+  title: string;
+  conventional: {
+    headline: string;
+    description: string;
+  };
+  stark: {
+    headline: string;
+    description: string;
+    guarantee: string;
+  };
+  bgGradient: string;
+  borderClass: string;
+  dotColor: string;
 }
 
-const comparisons: ComparisonRow[] = [
+const comparisonCards: ComparisonCard[] = [
   {
-    dimension: "Execution Architecture",
-    conventional:
-      "Monolithic single-prompt inference and linear chains that fail if any intermediate step drifts.",
-    stark:
-      "Specialized multi-agent swarms coordinated via Directed Acyclic Graphs with isolated state and automated retries.",
+    id: "comp-1",
+    num: "01",
+    category: "Execution Model",
+    title: "Linear Prompt vs. Multi-Agent DAG",
+    conventional: {
+      headline: "Fragile Single-Prompt Inference",
+      description: "Attempts complex multi-step reasoning in a single prompt. If any intermediate step drifts, the entire workflow fails silently.",
+    },
+    stark: {
+      headline: "Parallel Multi-Agent DAG",
+      description: "Decomposes requests into Directed Acyclic Graphs with isolated state, concurrent execution, and automatic self-healing retries.",
+      guarantee: "100% Deterministic Execution Graph",
+    },
+    bgGradient: "bg-gradient-to-b from-slate-50 via-white to-white",
+    borderClass: "border-2 border-slate-300 hover:border-slate-500",
+    dotColor: "bg-slate-700",
   },
   {
-    dimension: "Context Grounding",
-    conventional:
-      "Naive top-k vector similarity dumping raw tokens into context, causing frequent hallucinations.",
-    stark:
-      "Hybrid dense vector and sparse keyword retrieval with hierarchical chunking and cryptographic citation lineage.",
+    id: "comp-2",
+    num: "02",
+    category: "Semantic Accuracy",
+    title: "Blind Vector Dump vs. Verifiable RAG",
+    conventional: {
+      headline: "Top-k Context Truncation",
+      description: "Dumps raw chunks into prompt context without hierarchy, causing frequent hallucinations and unverified assumptions.",
+    },
+    stark: {
+      headline: "Hybrid Dense + Sparse RAG",
+      description: "Preserves parent-child chunk lineage with cryptographic citation hashes for every generated claim.",
+      guarantee: "Verifiable Citation Lineage",
+    },
+    bgGradient: "bg-gradient-to-b from-amber-50/80 via-white to-white",
+    borderClass: "border-2 border-amber-300 hover:border-amber-500",
+    dotColor: "bg-amber-600",
   },
   {
-    dimension: "Process Observability",
-    conventional:
-      "Opaque black-box text responses with untraceable intermediate reasoning and no step-by-step telemetry.",
-    stark:
-      "Full execution observability: every agent message, tool invocation, and decision is logged with replay capability.",
+    id: "comp-3",
+    num: "03",
+    category: "Infrastructure",
+    title: "Bespoke Scripts vs. Open MCP Bus",
+    conventional: {
+      headline: "Brittle Proprietary Glue Code",
+      description: "Custom Python wrappers that shatter on every upstream API or schema update, creating compounding technical debt.",
+    },
+    stark: {
+      headline: "Model Context Protocol Standard",
+      description: "Unified open-standard MCP tool bridges with token sandboxing, zero vendor lock-in, and sub-50ms latency.",
+      guarantee: "Anthropic Open MCP Standard",
+    },
+    bgGradient: "bg-gradient-to-b from-blue-50/80 via-white to-white",
+    borderClass: "border-2 border-blue-300 hover:border-blue-500",
+    dotColor: "bg-blue-600",
   },
   {
-    dimension: "Governance & Human Oversight",
-    conventional:
-      "Binary all-or-nothing execution: either totally unconstrained or requiring constant manual human prompting.",
-    stark:
-      "Graduated risk-based governance: low-risk actions proceed autonomously while critical actions halt for dual-key authorization.",
-  },
-  {
-    dimension: "Operational Execution",
-    conventional:
-      "Unvalidated text generation without type safety, capable of hallucinating data structures and math.",
-    stark:
-      "Deterministic sandbox execution with strict Pydantic/Zod schema enforcement and zero-drift mathematical compute.",
+    id: "comp-4",
+    num: "04",
+    category: "Enterprise Oversight",
+    title: "Black Box vs. Dual-Key Governance",
+    conventional: {
+      headline: "Unconstrained Autonomous Drift",
+      description: "Binary operation: either totally unconstrained without safeguards or completely frozen awaiting manual copy-pasting.",
+    },
+    stark: {
+      headline: "Graduated Dual-Key Signoff",
+      description: "Low-risk routines commit automatically, while high-stakes financial and schema actions halt for cryptographic sign-off.",
+      guarantee: "Immutable SHA-256 Audit Trail",
+    },
+    bgGradient: "bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 text-white",
+    borderClass: "border-2 border-zinc-700 hover:border-zinc-500",
+    dotColor: "bg-blue-400",
   },
 ];
 
 export function WhyStarkSection() {
+  const [activeViews, setActiveViews] = useState<Record<string, "stark" | "conventional">>({
+    "comp-1": "stark",
+    "comp-2": "stark",
+    "comp-3": "stark",
+    "comp-4": "stark",
+  });
+
+  const toggleView = (id: string) => {
+    setActiveViews((prev) => ({
+      ...prev,
+      [id]: prev[id] === "stark" ? "conventional" : "stark",
+    }));
+  };
+
   return (
-    <section id="comparison" className="py-24 md:py-32 bg-zinc-50/70 border-b border-zinc-200">
+    <section id="comparison" className="py-24 md:py-32 bg-zinc-50/60 border-b border-zinc-200">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         
         {/* Section Header */}
@@ -62,104 +125,112 @@ export function WhyStarkSection() {
             </span>
           </div>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-zinc-950 tracking-tight leading-tight mb-6">
-            The fundamental shift from conversational demos to deterministic execution.
+            Four fundamental shifts from conversational demos to production reality.
           </h2>
           <p className="font-sans text-base sm:text-lg text-zinc-600 leading-relaxed">
-            Enterprise software cannot rely on probabilistic guesswork. See how STARK contrasts with conventional conversational AI architectures.
+            Compare conventional single-prompt architectures against STARK deterministic multi-agent orchestration.
           </p>
         </div>
 
-        {/* Two Large Contrasting 3D Panels */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          
-          {/* PANEL 1: Conventional Conversational AI (Muted, Diagnostic) */}
-          <TiltCard
-            tiltMaxAngle={5}
-            borderClass="border border-zinc-300/80 hover:border-zinc-400"
-            bgClass="bg-white/80"
-            className="h-full"
-          >
-            <div className="p-8 md:p-10 flex flex-col justify-between h-full">
-              <div>
-                <div className="flex items-center justify-between pb-6 mb-8 border-b border-zinc-200">
-                  <div>
-                    <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-semibold block mb-1">
-                      Paradigm 01
+        {/* 4 Contrast Cards (2x2 Grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+          {comparisonCards.map((card) => {
+            const isDark = card.id === "comp-4";
+            const currentView = activeViews[card.id] || "stark";
+            const isStark = currentView === "stark";
+
+            return (
+              <motion.div
+                key={card.id}
+                whileHover={{ y: -6 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className={`rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-between shadow-xl transition-all duration-300 ${card.bgGradient} ${card.borderClass}`}
+              >
+                {/* Header: Category Pill & Number */}
+                <div>
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-200/40">
+                    <span
+                      className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full font-mono text-xs font-semibold uppercase tracking-wider shadow-sm ${
+                        isDark
+                          ? "bg-zinc-800 text-zinc-200 border border-zinc-700"
+                          : "bg-white text-zinc-800 border border-zinc-200"
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${card.dotColor}`} />
+                      {card.category}
                     </span>
-                    <h3 className="font-serif text-2xl font-semibold text-zinc-800">
-                      Conventional Conversational AI
-                    </h3>
-                  </div>
-                  <XCircle className="w-6 h-6 text-zinc-400 shrink-0" />
-                </div>
-
-                <div className="space-y-6">
-                  {comparisons.map((item, idx) => (
-                    <div key={idx} className="pb-6 border-b border-zinc-100 last:border-none last:pb-0">
-                      <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 block mb-1.5">
-                        {item.dimension}
-                      </span>
-                      <p className="font-sans text-sm text-zinc-600 leading-relaxed">
-                        {item.conventional}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-8 pt-6 border-t border-zinc-200 text-xs font-mono text-zinc-400">
-                Fragile across multi-step enterprise workflows.
-              </div>
-            </div>
-          </TiltCard>
-
-          {/* PANEL 2: STARK Orchestration (Elevated Dark Panel with Cobalt Accents) */}
-          <TiltCard
-            tiltMaxAngle={5}
-            borderClass="border-2 border-zinc-950 shadow-2xl hover:border-blue-700/60"
-            bgClass="bg-zinc-950 text-white"
-            className="h-full"
-          >
-            <div className="p-8 md:p-10 flex flex-col justify-between h-full">
-              <div>
-                <div className="flex items-center justify-between pb-6 mb-8 border-b border-zinc-800">
-                  <div>
-                    <span className="font-mono text-xs uppercase tracking-wider text-blue-400 font-semibold block mb-1">
-                      Paradigm 02 — Production Grade
+                    <span className="font-mono text-xs font-bold text-zinc-400">
+                      [ {card.num} ]
                     </span>
-                    <h3 className="font-serif text-2xl font-semibold text-white">
-                      STARK Multi-Agent Orchestration
-                    </h3>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-blue-950 border border-blue-600/60 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-blue-400" />
-                  </div>
-                </div>
 
-                <div className="space-y-6">
-                  {comparisons.map((item, idx) => (
-                    <div key={idx} className="pb-6 border-b border-zinc-800/80 last:border-none last:pb-0">
-                      <span className="font-mono text-[11px] uppercase tracking-wider text-blue-400 block mb-1.5 font-semibold">
-                        {item.dimension}
+                  <h3
+                    className={`font-serif text-2xl font-semibold tracking-tight mb-4 ${
+                      isDark ? "text-white" : "text-zinc-950"
+                    }`}
+                  >
+                    {card.title}
+                  </h3>
+
+                  {/* Active Comparison Body */}
+                  <div
+                    className={`p-5 rounded-2xl mb-6 border transition-colors ${
+                      isStark
+                        ? isDark
+                          ? "bg-zinc-900 border-zinc-800 text-zinc-200"
+                          : "bg-white border-zinc-200/80 text-zinc-800 shadow-sm"
+                        : isDark
+                        ? "bg-zinc-900/60 border-zinc-800 text-zinc-400"
+                        : "bg-zinc-100 border-zinc-200 text-zinc-600"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-blue-600">
+                        {isStark ? "● STARK Orchestration" : "○ Conventional Conversational AI"}
                       </span>
-                      <p className="font-sans text-sm text-zinc-300 leading-relaxed">
-                        {item.stark}
-                      </p>
+                      {isStark ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-zinc-400" />
+                      )}
                     </div>
-                  ))}
+
+                    <h4 className="font-serif text-lg font-semibold mb-2">
+                      {isStark ? card.stark.headline : card.conventional.headline}
+                    </h4>
+
+                    <p className="font-sans text-xs sm:text-sm leading-relaxed">
+                      {isStark ? card.stark.description : card.conventional.description}
+                    </p>
+
+                    {isStark && (
+                      <div className="mt-3 pt-3 border-t border-zinc-200/40 flex items-center gap-1.5 font-mono text-[11px] text-emerald-600 font-semibold">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>{card.stark.guarantee}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-8 pt-6 border-t border-zinc-800 flex items-center justify-between text-xs font-mono text-zinc-400">
-                <span className="flex items-center gap-1.5 text-blue-400">
-                  <ShieldCheck className="w-4 h-4" />
-                  Deterministic & Production Verified
-                </span>
-                <span className="text-zinc-500">Zero Hallucination Tolerance</span>
-              </div>
-            </div>
-          </TiltCard>
-
+                {/* Bottom Toggle Pill Button */}
+                <div className="pt-4 border-t border-zinc-200/40">
+                  <button
+                    onClick={() => toggleView(card.id)}
+                    className={`w-full py-3 px-5 rounded-2xl font-sans text-xs font-semibold tracking-wider uppercase border shadow-sm flex items-center justify-center gap-2 transition-all ${
+                      isDark
+                        ? "bg-white text-zinc-950 hover:bg-zinc-100 border-white"
+                        : "bg-zinc-950 text-white hover:bg-zinc-800 border-zinc-950"
+                    }`}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>
+                      {isStark ? "View Conventional Limitation" : "Switch to STARK Guarantee"}
+                    </span>
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
       </div>
